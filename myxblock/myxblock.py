@@ -3,14 +3,14 @@
 import pkg_resources
 import posixpath
 
-from apikey.client import Client
-from apikey import utils
+from testpackage.onshape import Onshape
 from urlparse import urlparse
 from xblock.core import XBlock
 from xblock.fields import Boolean, Float, Integer, Scope, String
 from xblock.fragment import Fragment
 from xblockutils.resources import ResourceLoader
 from xblockutils.studio_editable import StudioEditableXBlockMixin
+from _keys import keys
 
 loader = ResourceLoader(__name__)  # pylint: disable=invalid-name
 
@@ -31,7 +31,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
     """
 
     # create instance of the onshape client; change key to test on another stack
-    c = Client(stack='https://cad.onshape.com', creds=pkg_resources.resource_filename(__name__, "creds.json"), logging=False)
+    c = Onshape(access=keys["access"], secret=keys["secret"], target=keys["target"])
 
     # Fields are defined on the class.  You can access them in your code as
     # self.<fieldname>.
@@ -151,17 +151,17 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
 
     def check_and_save_answers(self, documentId, workspaceId, elementId):
         """Common implementation for the check and save handlers."""
-        if self.max_attempts and self.attempts >= self.max_attempts:
-            # The "Check" button is hidden when the maximum number of attempts has been reached, so
-            # we can only get here by manually crafted requests.  We simply return the current
-            # status without rechecking or storing the answers in that case.
-            return self.partVolume < self.max_volume and self.partVolume > self.min_volume
+        # if self.max_attempts and self.attempts >= self.max_attempts:
+        #     # The "Check" button is hidden when the maximum number of attempts has been reached, so
+        #     # we can only get here by manually crafted requests.  We simply return the current
+        #     # status without rechecking or storing the answers in that case.
+        #     return self.partVolume < self.max_volume and self.partVolume > self.min_volume
 
-        parts = self.c.parts_in_partstudio(documentId, workspaceId, elementId)
+        parts = self.c.parts.get_parts_in_partstudio(documentId, workspaceId, elementId)
         partId = parts.json()[0]['partId']
 
         if (partId):
-            massProperties = self.c.mass_properties(documentId, workspaceId, elementId, partId)
+            massProperties = self.c.parts.get_mass_properties(documentId, ('w',workspaceId), elementId, partId)
             self.partVolume = massProperties.json()['bodies'][partId]['volume'][0]
             return self.partVolume < self.max_volume and self.partVolume > self.min_volume
 
