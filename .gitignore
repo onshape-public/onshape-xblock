@@ -1,3 +1,4 @@
 myxblock/_keys.py
 .idea/
 *.egg*
+*.pyc

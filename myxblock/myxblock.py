@@ -6,7 +6,7 @@ import posixpath
 from testpackage.onshape import Onshape
 from urlparse import urlparse
 from xblock.core import XBlock
-from xblock.fields import Boolean, Float, Integer, Scope, String
+from xblock.fields import Boolean, Float, Integer, Scope, String, Dict
 from xblock.fragment import Fragment
 from xblockutils.resources import ResourceLoader
 from xblockutils.studio_editable import StudioEditableXBlockMixin
@@ -40,7 +40,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         display_name='Display Name',
         help='The title Studio uses for the component.',
         scope=Scope.settings,
-        default='Onshape volume problem'
+        default='Onshape problem'
     )
     prompt = String(
         display_name='Prompt',
@@ -48,6 +48,22 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         scope=Scope.content,
         multiline_editor=True,
         resettable_editor=False,
+    )
+    question_type = String(
+        display_name='The type of the question',
+        help='The type of the question being asked. Possible types are volume, mass, etc...',
+        scope=Scope.content,
+        multiline_editor=False,
+        resettable_editor=False,
+        default="volume"
+    )
+    question_constraints = Dict(
+        display_name='The constraints of what is considered a correct answer. These can vary significantly based on the question type.',
+        help='Please visit the documentation here to see the possible question types.',
+        scope=Scope.content,
+        multiline_editor=False,
+        resettable_editor=False,
+        default='Paste the URL from your Onshape session into Document URL field. You can check your answers using the button below.',
     )
     help_text = String(
         display_name='Help text',
@@ -57,22 +73,6 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         multiline_editor=True,
         resettable_editor=False,
         default='Paste the URL from your Onshape session into Document URL field. You can check your answers using the button below.',
-    )
-    min_volume = Float(
-        display_name='Minimum Volume value',
-        help='The minimum volume of the part',
-        scope=Scope.content,
-        multiline_editor=False,
-        resettable_editor=False,
-        default=0.0,
-    )
-    max_volume = Float(
-        display_name='Maximum Volume value',
-        help='The maximum volume of the part',
-        scope=Scope.content,
-        multiline_editor=False,
-        resettable_editor=False,
-        default=2.0,
     )
     maximum_score = Float(
         display_name='Maximum score',
@@ -91,8 +91,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
     editable_fields = [
         'prompt',
         'display_name',
-        'min_volume',
-        'max_volume',
+        'question_constraints',
         'help_text',
         'maximum_score',
         'max_attempts',
@@ -120,8 +119,8 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
             attempts=self.attempts,
             max_attempts=self.max_attempts,
             partVolume=self.partVolume,
-            minVolume=self.min_volume,
-            maxVolume=self.max_volume,
+            minVolume=self.question_constraints["min"],
+            maxVolume=self.question_constraints["max"],
         )
 
     def student_view(self, context=None):
@@ -155,15 +154,18 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         #     # The "Check" button is hidden when the maximum number of attempts has been reached, so
         #     # we can only get here by manually crafted requests.  We simply return the current
         #     # status without rechecking or storing the answers in that case.
-        #     return self.partVolume < self.max_volume and self.partVolume > self.min_volume
+        #     return self.partVolume < self.max_value and self.partVolume > self.min_value
 
-        parts = self.c.parts.get_parts_in_partstudio(documentId, workspaceId, elementId)
-        partId = parts.json()[0]['partId']
+        if self.question_type == "volume":
+            res = self.c.parts.get_parts_in_partstudio(documentId, workspaceId, elementId)
+            partId = res.json()[0]['partId']
+            if (partId):
+                massProperties = self.c.parts.get_mass_properties(documentId, ('w',workspaceId), elementId, partId)
+                self.partVolume = massProperties.json()['bodies'][partId]['volume'][0]
+                return self.partVolume < self.question_constraints["max"] and self.partVolume > self.question_constraints["min"]
+        if self.question_type == "mass":
+            return True
 
-        if (partId):
-            massProperties = self.c.parts.get_mass_properties(documentId, ('w',workspaceId), elementId, partId)
-            self.partVolume = massProperties.json()['bodies'][partId]['volume'][0]
-            return self.partVolume < self.max_volume and self.partVolume > self.min_volume
 
     @XBlock.json_handler
     def check_answers(self, data, suffix=''):  # pylint: disable=unused-argument
@@ -174,12 +176,18 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
 
         pathComponents = path_parse(urlparse(data['documentUrl']).path)
 
-        self.attempts += 1
+
         self.score = None
         if (self.check_and_save_answers(pathComponents[1], pathComponents[3], pathComponents[5])):
             self.score = self.maximum_score
         self.runtime.publish(self, 'grade', dict(value=self.score, max_value=self.maximum_score))
+
+
+        self.attempts += 1
         return self.get_status()
+
+
+
 
     @XBlock.json_handler
     def save_answers(self, data, unused_suffix=''):
@@ -194,7 +202,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         """A canned scenario for display in the workbench."""
         return [
             ("MyXBlock",
-             """<myxblock max_attempts='3' min_volume='0.0001249' max_volume='0.0001251' prompt='Design a part with a volume of 7.627968 in^3'>
+             """<myxblock max_attempts='3' question_type='volume' question_constraints="{'min':'0.0001249', 'max':'0.0001251'}" prompt='Design a part with a volume of 7.627968 in^3'>
              </myxblock>
              """)
         ]

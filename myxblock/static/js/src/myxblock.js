@@ -24,7 +24,7 @@ function MyXBlock(runtime, element, init_args) {
             $status.removeClass('correct').addClass('incorrect');
             $status.text('incorrect');
             $status_message.text(
-                "Your part's volume of " + data.partVolume + " is incorrect. The volume should be between " + data.minVolume + " and " + data.maxVolume
+                "Your part's of " + data.partVolume + " is incorrect. The volume should be between " + data.minVolume + " and " + data.maxVolume
             );
         }
     }
@@ -55,10 +55,11 @@ function MyXBlock(runtime, element, init_args) {
     }
 
     function callHandler(url) {
+        data = {"documentUrl": $('input.myxblock-documentUrl').val()}
         $.ajax({
             type: "POST",
             url: url,
-            data: JSON.stringify({documentUrl: $('input.myxblock-documentUrl').val()}),
+            data: JSON.stringify(data),
             success: updateStatus,
         });
     }
