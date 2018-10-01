@@ -5,7 +5,6 @@ function MyXBlockAside(runtime, element, block_element, init_args) {
 
 function MyXBlock(runtime, element, init_args) {
     var checkHandlerUrl = runtime.handlerUrl(element, 'check_answers');
-    var saveHandlerUrl = runtime.handlerUrl(element, 'save_answers');
 
     function updateStatusMessage(data) {
         var $status = $('.status', element);
@@ -24,26 +23,27 @@ function MyXBlock(runtime, element, init_args) {
             $status.removeClass('correct').addClass('incorrect');
             $status.text('incorrect');
             $status_message.text(
-                "Your part's of " + data.partVolume + " is incorrect. The volume should be between " + data.minVolume + " and " + data.maxVolume
+                "Your part's of " + data.partVolume + " is incorrect. The volume should be between " + data.d.v.min + " and " + data.d.v.max
             );
         }
     }
 
+    // Default update feedback function that can hide the check button.
     function updateFeedback(data) {
         var feedback_msg;
         if (data.score === null) {
-            feedback_msg = '(' + data.maximum_score + ' points possible)';
+            feedback_msg = '(' + data.v.max_score + ' points possible)';
         } else {
-            feedback_msg = '(' + data.score + '/' + data.maximum_score + ' points)';
+            feedback_msg = '(' + data.v.min + '/' + data.v.max + ' points)';
         }
-        if (data.max_attempts) {
-            feedback_msg = 'You have used ' + data.attempts + ' of ' + data.max_attempts +
+        if (data.v.max_attempts) {
+            feedback_msg = 'You have used ' + data.appearance.attempts + ' of ' + data.appearance.max_attempts +
                 ' submissions ' + feedback_msg;
-            if (data.attempts == data.max_attempts - 1) {
+            if (data.attempts == data.v.max_attempts - 1) {
                 $('.action .check .check-label', element).text('Final check');
             }
-            else if (data.attempts >= data.max_attempts) {
-                $('.action .check, .action .save', element).hide();
+            else if (data.attempts >= data.v.max_attempts) {
+                $('.action .check', element).hide();
             }
         }
         $('.submission-feedback', element).text(feedback_msg);
@@ -51,7 +51,8 @@ function MyXBlock(runtime, element, init_args) {
 
     function updateStatus(data) {
         updateStatusMessage(data);
-        updateFeedback(data);
+        // Choose the feedback method desired
+        eval(data.appearance.feedback_method+"(data);")
     }
 
     function callHandler(url) {
@@ -74,7 +75,6 @@ function MyXBlock(runtime, element, init_args) {
 
     $('#activetable-help-button', element).click(toggleHelp);
     $('.action .check', element).click(function (e) { callHandler(checkHandlerUrl); });
-    $('.action .save', element).click(function (e) { callHandler(saveHandlerUrl); });
     updateStatus(init_args);
 
     $(function ($) {
