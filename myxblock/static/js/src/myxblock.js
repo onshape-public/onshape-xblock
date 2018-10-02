@@ -5,6 +5,7 @@ function MyXBlockAside(runtime, element, block_element, init_args) {
 
 function MyXBlock(runtime, element, init_args) {
     var checkHandlerUrl = runtime.handlerUrl(element, 'check_answers');
+    $('.submission-feedback', element).text("hi there!");
 
     function updateStatusMessage(data) {
         var $status = $('.status', element);
@@ -34,7 +35,7 @@ function MyXBlock(runtime, element, init_args) {
         if (data.score === null) {
             feedback_msg = '(' + data.v.max_score + ' points possible)';
         } else {
-            feedback_msg = '(' + data.v.min + '/' + data.v.max + ' points)';
+            feedback_msg = '(' + data.score + '/' + data.v.max_score + ' points)';
         }
         if (data.v.max_attempts) {
             feedback_msg = 'You have used ' + data.appearance.attempts + ' of ' + data.appearance.max_attempts +
@@ -46,7 +47,7 @@ function MyXBlock(runtime, element, init_args) {
                 $('.action .check', element).hide();
             }
         }
-        $('.submission-feedback', element).text(feedback_msg);
+        $('.submission-feedback', element).text("hi there!");
     }
 
     function updateStatus(data) {
@@ -71,6 +72,22 @@ function MyXBlock(runtime, element, init_args) {
         visible = $help_text.is(':visible');
         $(this).text(visible ? '-help' : '+help');
         $(this).attr('aria-expanded', visible);
+    }
+
+    //Executes the method defined with the parameters defined.
+    function executeMethod(method_definition, data){
+        if (getAllFunctions().includes(method_definition.method_name)){
+            eval(data.method_definition.method_name+"(data);")
+        }
+    }
+    //Get all the functions defined in the window
+    function getAllFunctions(){
+        var allfunctions=[];
+          for ( var i in window) {
+        if((typeof window[i]).toString()=="function"){
+            allfunctions.push(window[i].name);
+          }
+       }
     }
 
     $('#activetable-help-button', element).click(toggleHelp);

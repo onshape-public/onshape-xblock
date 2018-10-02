@@ -12,6 +12,7 @@ from xblockutils.resources import ResourceLoader
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 from _keys import keys
 import json
+import os
 
 loader = ResourceLoader(__name__)  # pylint: disable=invalid-name
 
@@ -105,12 +106,18 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         The primary view of the MyXBlock, shown to students
         when viewing courses.
         """
-        # Change the defining dict based on the
+        # Update the default dictionary with the user-specified values.
+        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.question_type+".json")
+        d = json.load(open(file_path))
+        d.update(self.d)
+        self.d = d
+
         context = dict(
             help_text=self.help_text,
             prompt=self.prompt,
             d=self.d,
         )
+
         html = loader.render_django_template('templates/html/myxblock.html', context)
 
         css_context = dict(
@@ -144,6 +151,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         if self.question_type == "mass":
             return True
 
+
     @XBlock.json_handler
     def check_answers(self, data, suffix=''):  # pylint: disable=unused-argument
         """Check the answers given by the student.
@@ -175,7 +183,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         d = {'appearance': {'feedback_method': 'updateFeedback'}, 'min': '0.0001249', 'max': '0.0001251'}
 
         return [
-            ("MyXBlock", """<myxblock max_attempts='3' question_type='volume' d="{'appearance':{'feedback_method':'updateFeedback'}, 'v':{'min':'0.0001249', 'max':'0.0001251', 'max_attempts':'1', 'max_score':'1.0'}}" prompt='Design a part with a volume of 7.627968 in^3'>
+            ("MyXBlock", """<myxblock max_attempts='3' question_type='volume' d="{}" prompt='Design a part with a volume of 7.627968 in^3'>
              </myxblock>
              """
              )
