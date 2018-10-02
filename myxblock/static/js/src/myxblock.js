@@ -4,27 +4,32 @@ function MyXBlockAside(runtime, element, block_element, init_args) {
 }
 
 function MyXBlock(runtime, element, init_args) {
+    // Call the python check_answers function when the user clicks
     var checkHandlerUrl = runtime.handlerUrl(element, 'check_answers');
-    $('.submission-feedback', element).text("hi there!");
 
+    // Update the feedback for the user
     function updateStatusMessage(data) {
         var $status = $('.status', element);
         var $status_message = $('.status-message', element);
 
-        if (!data.partVolume) {
+        // The user has not yet answered the question
+        if (data.attempts<1) {
             $status.removeClass('incorrect correct');
             $status.text('unanswered');
-            $status_message.text('');
+            $status_message.text('Please put the element url within the document url editable text box.');
         }
+        // The user answered correctly
         else if (data.score > 0) {
             $status.removeClass('incorrect').addClass('correct');
             $status.text('correct');
             $status_message.text('Great job!');
-        } else {
+        }
+        // The user answered incorrectly
+        else {
             $status.removeClass('correct').addClass('incorrect');
             $status.text('incorrect');
             $status_message.text(
-                "Your part's of " + data.partVolume + " is incorrect. The volume should be between " + data.d.v.min + " and " + data.d.v.max
+                "Your part's of " + data.volume + " is incorrect. The volume should be between " + data.v.min + " and " + data.v.max
             );
         }
     }
@@ -50,14 +55,16 @@ function MyXBlock(runtime, element, init_args) {
         $('.submission-feedback', element).text("hi there!");
     }
 
+    //data is passed in as the response from the call to check_answers
     function updateStatus(data) {
         updateStatusMessage(data);
         // Choose the feedback method desired
         eval(data.appearance.feedback_method+"(data);")
     }
 
+    // Call the specified url with the user-specified document url.
     function callHandler(url) {
-        data = {"documentUrl": $('input.myxblock-documentUrl').val()}
+        data = {"url": $('input.myxblock-documentUrl').val()}
         $.ajax({
             type: "POST",
             url: url,

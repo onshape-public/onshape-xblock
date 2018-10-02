@@ -1,1 +1,32 @@
-{"appearance":{"feedback_method":"updateFeedback"}, "v":{"min":"0.0001249", "max":"0.0001251", "max_attempts":"1", "max_score":"1.0"}}
+{
+  "appearance": {
+    "feedback_method": "updateFeedback"
+  },
+  "attempts": 0,
+  "constraints": {
+    "min": "0.0001249",
+    "max": "0.0001251",
+    "max_attempts": "1",
+    "max_score": "1.0"
+  },
+  "v": {
+    "min": "0.0001249",
+    "max": "0.0001251",
+    "max_attempts": "1",
+    "max_score": "1.0"
+  },
+  "volume": false,
+  "checks": {
+    "A wonderful volume check!": {
+      "name": "",
+      "type": "volume",
+      "points": 1,
+      "constraints": {
+        "min": 0,
+        "max": 0.000001
+      }
+    }
+  },
+  "score": 0
+}
+

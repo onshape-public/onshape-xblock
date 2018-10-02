@@ -1,4 +1,13 @@
-"""Onshape XBlock"""
+"""Onshape XBlock.
+
+How we handle the UI:
+
+We always pass an up to date dictionary, d, to the frontend. The frontend is somewhat functional - it
+only holds state in that the DOM is set a certain way. It never holds state that is not visible to the user. And when a
+frontend function is called, it is responsible for exactly synchronizing the frontend with the current dictionary passed
+from the backend. Therefore all calls from the frontend roughly look like: user_action_taken_handler(action_context)
+and the corresponding return will always be self.d - in otherwords all of the context that could possibly be needed to
+show visuals. Anything that needs to be hidden from the user should not go in d."""
 
 import pkg_resources
 import posixpath
@@ -12,22 +21,11 @@ from xblockutils.resources import ResourceLoader
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 from _keys import keys
 import json
-import os
+import os, sys
+import inspect
+from .utility import parse_url
 
 loader = ResourceLoader(__name__)  # pylint: disable=invalid-name
-
-
-def path_parse(path_string, normalize=True):
-    result = []
-    if normalize:
-        tmp = posixpath.normpath(path_string)
-    else:
-        tmp = path_string
-    while tmp != "/":
-        (tmp, item) = posixpath.split(tmp)
-        result.insert(0, item)
-    return result
-
 
 class MyXBlock(StudioEditableXBlockMixin, XBlock):
     """
@@ -35,7 +33,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
     """
 
     # create instance of the onshape client; change key to test on another stack
-    c = Onshape(access=keys["access"], secret=keys["secret"], target=keys["target"])
+    client = Onshape(access=keys["access"], secret=keys["secret"], target=keys["target"])
 
     display_name = String(
         display_name='Display Name',
@@ -83,12 +81,6 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         'help_text'
     ]
 
-    # The number of points awarded.
-    score = Float(scope=Scope.user_state)
-    # The number of attempts used.
-    attempts = Integer(scope=Scope.user_state, default=0)
-    partVolume = Float(scope=Scope.user_state)
-
     has_score = True
     icon_class = "problem"
 
@@ -96,10 +88,6 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         """Handy helper for getting resources from our kit."""
         data = pkg_resources.resource_string(__name__, path)
         return data.decode("utf8")
-
-    def get_status(self):
-        """Status dictionary passed to the frontend code."""
-        return self.d
 
     def student_view(self, context=None):
         """
@@ -130,44 +118,78 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         frag = Fragment(html)
         frag.add_css(css)
         frag.add_javascript(self.resource_string("static/js/src/myxblock.js"))
-        frag.initialize_js('MyXBlock', self.get_status())
+        frag.initialize_js('MyXBlock', self.d)
         return frag
 
-    def check_and_save_answers(self, documentId, workspaceId, elementId):
-        """Common implementation for the check and save handlers."""
-        # if self.max_attempts and self.attempts >= self.max_attempts:
-        #     # The "Check" button is hidden when the maximum number of attempts has been reached, so
-        #     # we can only get here by manually crafted requests.  We simply return the current
-        #     # status without rechecking or storing the answers in that case.
-        #     return self.partVolume < self.max_value and self.partVolume > self.min_value
 
-        if self.question_type == "volume":
-            res = self.c.parts.get_parts_in_partstudio(documentId, workspaceId, elementId)
+    class Checker:
+        """The Checker contains a number of check_ functions. Check functions provide validation checks for a given document/element. A check is made based on the question type.
+        For example, a volume question type will always call the "check_volume" function defined. Check functions need to at
+        the very least provide a dictionary containing a boolean under the key "correct" to indicate whether or not the
+        user satisfied the check. Other common response keys are "message", "actions", etc..."""
+        def __init__(self, client):
+            """The client provides the connection to the Onshape Servers in order to validate the request. Constraints
+            are the constraints for a correct answer for the current xblock. They are a dictionary as defined in the
+            particular check function."""
+            self.client = client
+
+        def check(self, check, guess):
+            """Perform the correct check for the stipulated check_type."""
+
+            #change the guess url (if there is one) into the constituent components.
+            guess.update(parse_url(guess["url"]))
+            checker_function = getattr(self, "check_" + check["type"])
+            return checker_function(check["constraints"], guess)
+
+        def check_volume(self, constraints, guess):
+            res = self.client.parts.get_parts_in_partstudio(guess["did"], guess["wvm"], guess["eid"])
+            if res.status_code != 200:
+                raise UserWarning(res.message)
             partId = res.json()[0]['partId']
-            if (partId):
-                massProperties = self.c.parts.get_mass_properties(documentId, ('w', workspaceId), elementId, partId)
-                self.partVolume = massProperties.json()['bodies'][partId]['volume'][0]
-                return self.partVolume < self.d['v']["max"] and self.partVolume > self.d['v']["min"]
-        if self.question_type == "mass":
-            return True
+            mass_properties = self.client.parts.get_mass_properties(guess["did"], guess["wvm_pair"], guess["eid"], partId)
+            volume = mass_properties.json()['bodies'][partId]['volume'][0]
+            correct = volume < constraints["max"] and volume > constraints["min"]
+            return {"correct":correct}
+
+        def check_mass(self, constraints, guess):
+            res = self.c.parts.get_parts_in_partstudio(guess['url'])
+            if res.status_code != 200:
+                raise UserWarning(res.message)
+            partId = res.json()[0]['partId']
+            mass_properties = self.client.parts.get_mass_properties(guess["did"], guess["wvm_pair"], guess["eid"], partId)
+            mass = mass_properties.json()['bodies'][partId]['mass'][0]
+            correct = mass < self.constraints["max"] and mass > self.constraints["min"]
+            return {"correct": correct}
 
 
     @XBlock.json_handler
-    def check_answers(self, data, suffix=''):  # pylint: disable=unused-argument
-        """Check the answers given by the student.
+    def check_answers(self, guess, suffix=''):  # pylint: disable=unused-argument
+        """Check the answers given by the student against the constraints.
 
-        This handler is called when the "Check" button is clicked.
+        This handler is called when the "Check" button is clicked and calls one of the check functions, as described
+        by the question type.
         """
 
-        pathComponents = path_parse(urlparse(data['documentUrl']).path)
-
         self.score = None
-        if (self.check_and_save_answers(pathComponents[1], pathComponents[3], pathComponents[5])):
-            self.score = self.maximum_score
-        self.runtime.publish(self, 'grade', dict(value=self.score, max_value=self.d['v']['max_score']))
 
-        self.attempts += 1
-        return self.get_status()
+        # Check the current guess against the constraints using the checker class.
+        responses = {}
+        checker = self.Checker(self.client)
+        for check_name, check in self.d["checks"].items():
+            responses[check_name] = checker.check(check, guess)
+
+
+        # Update the user's state based on the result of the check. For now, just give the user points.
+        for check_name, response in responses.items():
+            if response["correct"]:
+                self.d["score"] += self.d["checks"][check_name]["points"]
+
+        self.runtime.publish(self, 'grade', dict(value=self.d["score"], max_value=self.d['v']['max_score']))
+        self.d["attempts"] += 1
+
+        return self.d
+
+
 
     # @XBlock.json_handler
     # def save_answers(self, data, unused_suffix=''):
@@ -177,10 +199,10 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
     #     self.check_and_save_answers(pathComponents[1], pathComponents[3], pathComponents[5])
     #     return self.get_status()
 
+
     @staticmethod
     def workbench_scenarios():
         """A canned scenario for display in the workbench."""
-        d = {'appearance': {'feedback_method': 'updateFeedback'}, 'min': '0.0001249', 'max': '0.0001251'}
 
         return [
             ("MyXBlock", """<myxblock max_attempts='3' question_type='volume' d="{}" prompt='Design a part with a volume of 7.627968 in^3'>
