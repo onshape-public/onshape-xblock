@@ -7,60 +7,75 @@ function MyXBlock(runtime, element, init_args) {
     // Call the python check_answers function when the user clicks
     var checkHandlerUrl = runtime.handlerUrl(element, 'check_answers');
 
-    // Update the feedback for the user.
+    // Update the feedback for the user. If multiple checks, this will display all the check messages of the checks
+    // that didn't pass.
     function updateResponseMessages(responses) {
         var $status = $('.status', element);
         var $status_message = $('.status-message', element);
+        var $check_list = $('.check-list', element);
+        $check_list.empty();
 
-        // The user has not yet answered the question
-        if (responses) {
-            $status.removeClass('incorrect correct');
-            $status.text('unanswered');
-            $status_message.text('Please put the element url within the document url editable text box.');
+        for (x in responses) {
+            var response = responses[x]
+
+
+            // The user has not yet answered the question
+            if (response.correct==undefined){
+                $status.removeClass('incorrect correct');
+                $status.text('unanswered');
+                $status_message.text('Please put the element url within the document url editable text box.');
+            }
+            // The user answered correctly
+            if (response.correct) {
+                $status.removeClass('incorrect').addClass('correct');
+                $status.text('correct');
+                $status_message.text('Great job! All checks passed!');
+            }
+            // The user answered incorrectly
+            else {
+                $status.removeClass('correct').addClass('incorrect');
+                $status.text('incorrect');
+                $status_message.text("The following checks don't pass:")
+                $check_list.append("<li>"+response.message+"</li>")
+            }
         }
-        // The user answered correctly
-        else if (responses.score > 0) {
-            $status.removeClass('incorrect').addClass('correct');
-            $status.text('correct');
-            $status_message.text('Great job!');
-        }
-        // The user answered incorrectly
-        else {
-            $status.removeClass('correct').addClass('incorrect');
-            $status.text('incorrect');
-            $status_message.text(
-                responses.responses[0].message
-            );
-        }
+
+
     }
 
-    // Default update feedback function that can hide the check button. This takes a bunch of responses and provides
-    //a feedback message corresponding to each response.
-    function updateFeedback(data) {
+    // This updates the score message for the user.
+    function UpdateScore(data) {
         var feedback_msg;
         if (data.score === null) {
-            feedback_msg = '(' + data.v.max_score + ' points possible)';
+            feedback_msg = '(' + data.max_score + ' points possible)';
         } else {
-            feedback_msg = '(' + data.score + '/' + data.v.max_score + ' points)';
+            feedback_msg = '(' + data.score + '/' + data.max_score + ' points)';
         }
-        if (data.v.max_attempts) {
-            feedback_msg = 'You have used ' + data.appearance.attempts + ' of ' + data.appearance.max_attempts +
-                ' submissions ' + feedback_msg;
-            if (data.attempts == data.v.max_attempts - 1) {
+        if (data.max_attempts) {
+
+            feedback_msg = 'You have used ' + data.attempts + ' of ' + data.max_attempts +
+                ' submissions. Your current answer is worth: ' + feedback_msg;
+
+            if (data.attempts == data.max_attempts - 1) {
                 $('.action .check .check-label', element).text('Final check');
             }
-            else if (data.attempts >= data.v.max_attempts) {
+            else if (data.attempts >= data.max_attempts) {
                 $('.action .check', element).hide();
             }
         }
-        $('.submission-feedback', element).text("hi there!");
+        $('.submission-feedback', element).text(feedback_msg);
     }
 
     //data is passed in as the response from the call to check_answers
     function updateStatus(data) {
-        updateResponseMessages(data);
-        // Choose the feedback method desired
-        eval(data.appearance.feedback_method+"(data);")
+        if ('error' in data){
+            var $status_message = $('.status-message', element);
+            $status_message.text(data.error)
+        } else{
+            responses = data.responses
+            updateResponseMessages(responses);
+            UpdateScore(data);
+        }
     }
 
     // Call the specified url with the user-specified document url.

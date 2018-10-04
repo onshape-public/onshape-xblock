@@ -1,0 +1,8 @@
+{
+  "appearance": {
+    "feedback_method": "updateFeedback"
+  },
+  "attempts": 0,
+  "max_attempts": 4
+}
+

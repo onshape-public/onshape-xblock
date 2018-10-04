@@ -26,7 +26,7 @@ def prepopulate_json(d, path_to_json_root):
     must have a type."""
 
     #The metatypes available at the given context
-    metatypes = [name for name in os.listdir(path_to_json_root) if os.path.isdir(name)]
+    metatypes = [name for name in os.listdir(path_to_json_root) if os.path.isdir(os.path.join(path_to_json_root, name))]
 
     # Base case: there is no type key.
     if "type" not in d:
@@ -37,8 +37,8 @@ def prepopulate_json(d, path_to_json_root):
         # Update the prepopulated dictionary with the passed in d, so as not to overwrite user-defined behavior
         type_def_path = os.path.join(path_to_json_root, d["type"] + ".json")
         type_def = json.load(open(type_def_path, "r"))
-        d = {k: v for d in [type_def, d] for k,v in d.items()}
-    except IOError as e:
+        d = {k: v for d in [type_def, d] for k, v in d.items()}
+    except IOError:
         raise UserWarning("Cannot find the type definition that should be located here:" + type_def_path)
 
     # Recursively enter the metatypes to build up the d:
@@ -48,12 +48,12 @@ def prepopulate_json(d, path_to_json_root):
             # If the metatype is pointing to a list, prepopulate each item
             if isinstance(child, list):
                 json_list = []
-                for d in child:
-                    json_list.append(prepopulate_json(d[metatype], Path(path_to_json_root) / metatype))
+                for child_d in child:
+                    json_list.append(prepopulate_json(child_d, os.path.join(path_to_json_root, metatype)))
                 d[metatype] = json_list
 
-            # If the metatype is pointing to a single dict, then call prepopulate_json
+            # If the metatype is pointing to a single dict, then call prepopulate_json on just the single item
             if isinstance(child, dict):
-                d[metatype] = prepopulate_json(d[metatype], Path(path_to_json_root) / metatype)
+                d[metatype] = prepopulate_json(child, os.path.join(path_to_json_root, metatype))
 
     return d

@@ -110,6 +110,9 @@
 .activetable_block .status-message {
   margin: 0.5em 0 1.5em;
 }
+.activetable_block .check-list {
+  margin: 0.5em 0 1.5em;
+}
 .activetable_block .action button {
   height: 40px;
   margin-right: 10px;

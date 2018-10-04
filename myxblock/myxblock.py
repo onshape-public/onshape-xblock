@@ -11,7 +11,7 @@ show visuals. Anything that needs to be hidden from the user should not go in d.
 
 import pkg_resources
 import posixpath
-
+import requests
 from testpackage.onshape import Onshape
 from urlparse import urlparse
 from xblock.core import XBlock
@@ -24,8 +24,11 @@ import json
 import os, sys
 import inspect
 from .utility import parse_url
+from .utility import prepopulate_json
+import pint
 
 loader = ResourceLoader(__name__)  # pylint: disable=invalid-name
+u = pint.UnitRegistry()
 
 class MyXBlock(StudioEditableXBlockMixin, XBlock):
     """
@@ -81,8 +84,23 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         'help_text'
     ]
 
+    # The number of points awarded.
+    score = Float(scope=Scope.user_state)
+    # The number of attempts used.
+    attempts = Integer(scope=Scope.user_state, default=0)
+    # The maximum score as calculated from the problem definition
+    max_score = Float(scope=Scope.user_state)
+
     has_score = True
     icon_class = "problem"
+
+    # The max score base on the summation of scores within the checks.
+    @property
+    def max_score(self):
+        max_score = 0
+        for check in self.d["checks"]:
+            max_score += check["points"]
+        return max_score
 
     def resource_string(self, path):
         """Handy helper for getting resources from our kit."""
@@ -95,10 +113,9 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         when viewing courses.
         """
         # Update the default dictionary with the user-specified values.
-        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), self.question_type+".json")
-        d = json.load(open(file_path))
-        d.update(self.d)
-        self.d = d
+        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "question_type_templates")
+        self.d = prepopulate_json(self.d, file_path)
+        self.score = 0
 
         context = dict(
             help_text=self.help_text,
@@ -118,7 +135,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         frag = Fragment(html)
         frag.add_css(css)
         frag.add_javascript(self.resource_string("static/js/src/myxblock.js"))
-        frag.initialize_js('MyXBlock', self.d)
+        frag.initialize_js('MyXBlock', {"d":self.d, "score":self.score, "max_score":self.max_score})
         return frag
 
 
@@ -148,14 +165,18 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
             response = {}
             partId = self.get_part_id(check, guess)
             mass_properties = self.client.parts.get_mass_properties(guess["did"], guess["wvm_pair"], guess["eid"], partId)
-            volume = mass_properties.json()['bodies'][partId]['volume'][0]
-            response["correct"] = volume < constraints["max"] and volume > constraints["min"]
+            volume = mass_properties.json()['bodies'][partId]['volume'][0] * u.m**3
+            response["correct"] = u(constraints["min"]) < volume < u(constraints["max"])
 
             # If the response is incorrect, give the formatted failure message.
             if not response["correct"]:
+                response["points"] = 0
                 response["message"] = constraints["failure_message"].format(volume=volume,
                                                                              min_volume=constraints["min"],
-                                                                             max_volume=constraints["max"])
+                                                                             max_volume=constraints["max"],
+                                                                            max_points=check["points"],
+                                                                            points=response["points"]
+                                                                            )
 
             return response
 
@@ -166,12 +187,18 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
             response = {}
             partId = self.get_part_id(check, guess)
             mass_properties = self.client.parts.get_mass_properties(guess["did"], guess["wvm_pair"], guess["eid"], partId)
-            mass = mass_properties.json()['bodies'][partId]['mass'][0]
-            response["correct"] = mass < self.constraints["max"] and mass > self.constraints["min"]
+            mass = mass_properties.json()['bodies'][partId]['mass'][0] * u.kg
+            response["correct"] = u(constraints["min"]) < mass < u(constraints["max"])
 
             # If the response is incorrect, give the formatted failure message.
             if not response["correct"]:
-                response["message":] = constraints["failure_message"].format(mass=mass)
+                response["points"] = 0
+                response["message"] = constraints["failure_message"].format(mass=mass,
+                                                                             min_mass=constraints["min"],
+                                                                             max_mass=constraints["max"],
+                                                                            max_points=check["points"],
+                                                                            points=response["points"]
+                                                                            )
 
             return response
 
@@ -179,9 +206,9 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
             """Return the partId of the part specified by constraints["part_number"]."""
             constraints = check["constraints"]
             res = self.client.parts.get_parts_in_partstudio(guess["did"], guess["wvm"], guess["eid"])
-            if res.status_code != 200:
-                raise UserWarning(res.message)
+            res.raise_for_status()
             return res.json()[constraints['part_number']]['partId']
+
 
     @XBlock.json_handler
     def check_answers(self, guess, suffix=''):  # pylint: disable=unused-argument
@@ -191,22 +218,28 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         by the question type.
         """
 
-        self.score = None
+        try:
+            self.score = 0
 
-        # Check the current guess against the constraints using the checker class.
-        responses = []
-        checker = self.Checker(self.client)
-        for check in self.d["checks"]:
-            response = checker.check(check, guess)
-            if response["correct"]:
-                self.d["score"] += check["points"]
-            responses.append(response)
+            # Check the current guess against the constraints using the checker class.
+            responses = []
+            checker = self.Checker(self.client)
+            for check in self.d["checks"]:
+                response = checker.check(check, guess)
+                if response["correct"]:
+                    self.score += check["points"]
+                responses.append(response)
+
+            self.runtime.publish(self, 'grade', dict(value=self.score, max_value=self.max_score))
+            self.d["attempts"] += 1
 
 
-        self.runtime.publish(self, 'grade', dict(value=self.d["score"], max_value=self.d['v']['max_score']))
-        self.d["attempts"] += 1
-
-        return responses
+            status = {"responses": responses, "score": self.score, "max_score": self.max_score,
+             "max_attempts": self.d["max_attempts"], "attempts": self.d["attempts"]}
+        except requests.exceptions.HTTPError as err:
+            # Handle errors here. There should be some logic to turn scary errors into less scary errors for the user.
+            return {"error": err.response.json()['message']}
+        return status
 
 
 
@@ -224,7 +257,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         """A canned scenario for display in the workbench."""
 
         return [
-            ("MyXBlock", """<myxblock max_attempts='3' question_type='volume' d="{}" prompt='Design a part with a volume of 7.627968 in^3'>
+            ("MyXBlock", """<myxblock max_attempts='3' question_type='simple_checker' d="{'type': 'simple_checker', 'checks':[{'type': 'volume'}, {'type': 'mass'}], 'max_attempts':10}" prompt='Design a great part according to this prompt'>
              </myxblock>
              """
              )
