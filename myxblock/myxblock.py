@@ -139,28 +139,49 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
             #change the guess url (if there is one) into the constituent components.
             guess.update(parse_url(guess["url"]))
             checker_function = getattr(self, "check_" + check["type"])
-            return checker_function(check["constraints"], guess)
+            return checker_function(check, guess)
 
-        def check_volume(self, constraints, guess):
+        def check_volume(self, check, guess):
+
+            # Get and test the volume
+            constraints = check["constraints"]
+            response = {}
+            partId = self.get_part_id(check, guess)
+            mass_properties = self.client.parts.get_mass_properties(guess["did"], guess["wvm_pair"], guess["eid"], partId)
+            volume = mass_properties.json()['bodies'][partId]['volume'][0]
+            response["correct"] = volume < constraints["max"] and volume > constraints["min"]
+
+            # If the response is incorrect, give the formatted failure message.
+            if not response["correct"]:
+                response["message"] = constraints["failure_message"].format(volume=volume,
+                                                                             min_volume=constraints["min"],
+                                                                             max_volume=constraints["max"])
+
+            return response
+
+        def check_mass(self, check, guess):
+
+            # Get and test the mass
+            constraints = check["constraints"]
+            response = {}
+            partId = self.get_part_id(check, guess)
+            mass_properties = self.client.parts.get_mass_properties(guess["did"], guess["wvm_pair"], guess["eid"], partId)
+            mass = mass_properties.json()['bodies'][partId]['mass'][0]
+            response["correct"] = mass < self.constraints["max"] and mass > self.constraints["min"]
+
+            # If the response is incorrect, give the formatted failure message.
+            if not response["correct"]:
+                response["message":] = constraints["failure_message"].format(mass=mass)
+
+            return response
+
+        def get_part_id(self, check, guess):
+            """Return the partId of the part specified by constraints["part_number"]."""
+            constraints = check["constraints"]
             res = self.client.parts.get_parts_in_partstudio(guess["did"], guess["wvm"], guess["eid"])
             if res.status_code != 200:
                 raise UserWarning(res.message)
-            partId = res.json()[0]['partId']
-            mass_properties = self.client.parts.get_mass_properties(guess["did"], guess["wvm_pair"], guess["eid"], partId)
-            volume = mass_properties.json()['bodies'][partId]['volume'][0]
-            correct = volume < constraints["max"] and volume > constraints["min"]
-            return {"correct":correct}
-
-        def check_mass(self, constraints, guess):
-            res = self.c.parts.get_parts_in_partstudio(guess['url'])
-            if res.status_code != 200:
-                raise UserWarning(res.message)
-            partId = res.json()[0]['partId']
-            mass_properties = self.client.parts.get_mass_properties(guess["did"], guess["wvm_pair"], guess["eid"], partId)
-            mass = mass_properties.json()['bodies'][partId]['mass'][0]
-            correct = mass < self.constraints["max"] and mass > self.constraints["min"]
-            return {"correct": correct}
-
+            return res.json()[constraints['part_number']]['partId']
 
     @XBlock.json_handler
     def check_answers(self, guess, suffix=''):  # pylint: disable=unused-argument
@@ -173,21 +194,19 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         self.score = None
 
         # Check the current guess against the constraints using the checker class.
-        responses = {}
+        responses = []
         checker = self.Checker(self.client)
-        for check_name, check in self.d["checks"].items():
-            responses[check_name] = checker.check(check, guess)
-
-
-        # Update the user's state based on the result of the check. For now, just give the user points.
-        for check_name, response in responses.items():
+        for check in self.d["checks"]:
+            response = checker.check(check, guess)
             if response["correct"]:
-                self.d["score"] += self.d["checks"][check_name]["points"]
+                self.d["score"] += check["points"]
+            responses.append(response)
+
 
         self.runtime.publish(self, 'grade', dict(value=self.d["score"], max_value=self.d['v']['max_score']))
         self.d["attempts"] += 1
 
-        return self.d
+        return responses
 
 
 

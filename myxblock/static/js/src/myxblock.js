@@ -7,19 +7,19 @@ function MyXBlock(runtime, element, init_args) {
     // Call the python check_answers function when the user clicks
     var checkHandlerUrl = runtime.handlerUrl(element, 'check_answers');
 
-    // Update the feedback for the user
-    function updateStatusMessage(data) {
+    // Update the feedback for the user.
+    function updateResponseMessages(responses) {
         var $status = $('.status', element);
         var $status_message = $('.status-message', element);
 
         // The user has not yet answered the question
-        if (data.attempts<1) {
+        if (responses) {
             $status.removeClass('incorrect correct');
             $status.text('unanswered');
             $status_message.text('Please put the element url within the document url editable text box.');
         }
         // The user answered correctly
-        else if (data.score > 0) {
+        else if (responses.score > 0) {
             $status.removeClass('incorrect').addClass('correct');
             $status.text('correct');
             $status_message.text('Great job!');
@@ -29,12 +29,13 @@ function MyXBlock(runtime, element, init_args) {
             $status.removeClass('correct').addClass('incorrect');
             $status.text('incorrect');
             $status_message.text(
-                "Your part's of " + data.volume + " is incorrect. The volume should be between " + data.v.min + " and " + data.v.max
+                responses.responses[0].message
             );
         }
     }
 
-    // Default update feedback function that can hide the check button.
+    // Default update feedback function that can hide the check button. This takes a bunch of responses and provides
+    //a feedback message corresponding to each response.
     function updateFeedback(data) {
         var feedback_msg;
         if (data.score === null) {
@@ -57,7 +58,7 @@ function MyXBlock(runtime, element, init_args) {
 
     //data is passed in as the response from the call to check_answers
     function updateStatus(data) {
-        updateStatusMessage(data);
+        updateResponseMessages(data);
         // Choose the feedback method desired
         eval(data.appearance.feedback_method+"(data);")
     }

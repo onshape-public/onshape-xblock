@@ -2,3 +2,6 @@ myxblock/_keys.py
 .idea/
 *.egg*
 *.pyc
+*.log
+coverage.xml
+.coverage
