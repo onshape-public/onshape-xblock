@@ -1,0 +1,9 @@
+{
+  "type": "feature_list",
+  "points": 1,
+  "constraints": {
+    "feature_type_list": ["newSketch", "extrude"],
+    "count_failure_message": "Your PartStudio has {count_actual} features in the feature list, but it should have {count_expected} features.",
+    "type_failure_message": "Your feature number {failed_feature_type_count} is supposed to be {feature_type_expected}, but is currently {feature_type_actual}."
+  }
+}

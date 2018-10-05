@@ -1,0 +1,8 @@
+{
+  "type": "center_of_mass",
+  "points": 1,
+  "constraints": {
+    "part_count": 2,
+    "failure_message": "Your PartStudio has {part_count_actual} parts but should have {part_count_check} parts. {points}/{max_points}"
+  }
+}

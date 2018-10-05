@@ -35,7 +35,7 @@ function MyXBlock(runtime, element, init_args) {
                 $status_message.text('Great job! All checks passed!');
             }
             // The user answered incorrectly
-            else {
+            else if (response.correct==false) {
                 $status.removeClass('correct').addClass('incorrect');
                 $status.text('incorrect');
                 $status_message.text("The following checks don't pass:")
