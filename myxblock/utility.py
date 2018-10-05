@@ -2,7 +2,9 @@ import urlparse
 import os
 from path import Path
 import json
+import pint
 
+u = pint.UnitRegistry()
 
 def parse_url(url):
     """Parse an Onshape element url into a dictionary containing did, eid, and wvm_pair"""
@@ -17,6 +19,19 @@ def parse_url(url):
             pass
     d["wvm_pair"] = (d["wvm_type"], d["wvm"])
     return d
+
+def quantify(s, default_units=u.m, error=None):
+    """Take a string and turn it into a pint quantity. If the string doesn't have an associated unit, use the one
+    specified in default_units. Error specifies a relative error for the measurement. 0.1 means an error of +/-10%."""
+    q = u(str(s))
+    if not isinstance(q, u.Quantity):
+        q = q*u.dimensionless
+    if isinstance(q, float) or q.units == u.dimensionless and default_units:
+        q = q*default_units
+    if error:
+        q = q.plus_minus(float(error), relative=True)
+    return q
+
 
 def prepopulate_json(d, path_to_json_root):
     """ Returns a prepopulated JSON. At the very least, all metatype keys and type keys are gauranteed to be filled in

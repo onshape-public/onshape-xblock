@@ -23,12 +23,10 @@ from _keys import keys
 import json
 import os, sys
 import inspect
-from .utility import parse_url
-from .utility import prepopulate_json
+from .utility import parse_url, prepopulate_json, quantify, u
 import pint
 
 loader = ResourceLoader(__name__)  # pylint: disable=invalid-name
-u = pint.UnitRegistry()
 
 class MyXBlock(StudioEditableXBlockMixin, XBlock):
     """
@@ -144,70 +142,126 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         For example, a volume question type will always call the "check_volume" function defined. Check functions need to at
         the very least provide a dictionary containing a boolean under the key "correct" to indicate whether or not the
         user satisfied the check. Other common response keys are "message", "actions", etc..."""
-        def __init__(self, client):
+        def __init__(self, client, guess):
             """The client provides the connection to the Onshape Servers in order to validate the request. Constraints
             are the constraints for a correct answer for the current xblock. They are a dictionary as defined in the
             particular check function."""
             self.client = client
+            # parse the guess url into the constituent components.
+            guess.update(parse_url(guess["url"]))
+            self.guess = guess
 
-        def check(self, check, guess):
+
+        def check(self, check):
             """Perform the correct check for the stipulated check_type."""
 
-            #change the guess url (if there is one) into the constituent components.
-            guess.update(parse_url(guess["url"]))
+
             checker_function = getattr(self, "check_" + check["type"])
-            return checker_function(check, guess)
+            return checker_function(check)
 
-        def check_volume(self, check, guess):
+        def check_volume(self, check):
 
-            # Get and test the volume
+            # Get and set values
             constraints = check["constraints"]
             response = {}
-            partId = self.get_part_id(check, guess)
-            mass_properties = self.client.parts.get_mass_properties(guess["did"], guess["wvm_pair"], guess["eid"], partId)
-            volume = mass_properties.json()['bodies'][partId]['volume'][0] * u.m**3
-            response["correct"] = u(constraints["min"]) < volume < u(constraints["max"])
+            min_volume = quantify(constraints["min"], default_units=u.m**3)
+            max_volume = quantify(constraints["max"], default_units=u.m**3)
+            part_number = check["constraints"]['part_number']
+            part_id = self.get_part_id(part_number)
+            mass_properties = self.get_mass_properties(part_id)
+            volume = quantify(mass_properties['bodies'][part_id]['volume'][0], default_units=u.m**3)
+
+            # To allow all checks to throw an error, they need to be implemented individually like this:
+            c = []
+            c.append(min_volume < volume)
+            c.append(volume < max_volume)
+
+            # Make the check
+            response["correct"] = all(c)
 
             # If the response is incorrect, give the formatted failure message.
             if not response["correct"]:
                 response["points"] = 0
-                response["message"] = constraints["failure_message"].format(volume=volume,
-                                                                             min_volume=constraints["min"],
-                                                                             max_volume=constraints["max"],
+                response["message"] = constraints["failure_message"].format(volume=volume.to(min_volume.units),
+                                                                            min_volume=min_volume,
+                                                                            max_volume=max_volume,
                                                                             max_points=check["points"],
                                                                             points=response["points"]
                                                                             )
-
             return response
 
-        def check_mass(self, check, guess):
+        def check_mass(self, check):
 
             # Get and test the mass
             constraints = check["constraints"]
             response = {}
-            partId = self.get_part_id(check, guess)
-            mass_properties = self.client.parts.get_mass_properties(guess["did"], guess["wvm_pair"], guess["eid"], partId)
-            mass = mass_properties.json()['bodies'][partId]['mass'][0] * u.kg
-            response["correct"] = u(constraints["min"]) < mass < u(constraints["max"])
+            min_mass = quantify(constraints["min"], default_units=u.kg)
+            max_mass = quantify(constraints["max"], default_units=u.kg)
+            part_number = check["constraints"]['part_number']
+            part_id = self.get_part_id(part_number)
+            mass_properties = self.get_mass_properties(part_id)
+            mass = quantify(mass_properties['bodies'][part_id]['mass'][0], default_units=u.kg)
+
+            # To allow all checks to throw an error, they need to be implemented individually like this:
+            c = []
+            c.append(min_mass < mass)
+            c.append(mass < max_mass)
+
+            response["correct"] = all(c)
 
             # If the response is incorrect, give the formatted failure message.
             if not response["correct"]:
                 response["points"] = 0
                 response["message"] = constraints["failure_message"].format(mass=mass,
-                                                                             min_mass=constraints["min"],
-                                                                             max_mass=constraints["max"],
+                                                                            min_mass=min_mass,
+                                                                            max_mass=max_mass,
                                                                             max_points=check["points"],
                                                                             points=response["points"]
                                                                             )
-
             return response
 
-        def get_part_id(self, check, guess):
-            """Return the partId of the part specified by constraints["part_number"]."""
+        def check_center_of_mass(self, check):
+
+            # Get and test the mass
             constraints = check["constraints"]
-            res = self.client.parts.get_parts_in_partstudio(guess["did"], guess["wvm"], guess["eid"])
+            tolerance = quantify(constraints['tolerance'], default_units=u.m)
+            response = {}
+            target_centroid = [quantify(x, default_units=u.m) for x in constraints["target_centroid"]]
+            part_number = check["constraints"]['part_number']
+            part_id = self.get_part_id(part_number)
+            mass_properties = self.get_mass_properties(part_id)
+            guess_centroid = [quantify(x, default_units=u.m) for x in mass_properties['bodies'][part_id]['centroid'][0:3]]
+
+            # To allow all checks to throw an error, they need to be implemented individually like this:
+            c = []
+            for x, target in zip(guess_centroid, target_centroid):
+                c.append(x < target+tolerance)
+                c.append(x > target-tolerance)
+
+            response["correct"] = all(c)
+
+            # If the response is incorrect, give the formatted failure message.
+            if not response["correct"]:
+                response["points"] = 0
+                response["message"] = constraints["failure_message"].format(target_centroid=str(",".join([str(x) for x in target_centroid])),
+                                                                            guess_centroid=str(",".join([str(x) for x in guess_centroid])),
+                                                                            tolerance=tolerance,
+                                                                            max_points=check["points"],
+                                                                            points=response["points"]
+                                                                            )
+            return response
+
+        def get_part_id(self, part_number):
+            """Return the partId of the part specified by "part_number" at the part specified by did, wvm, eid"""
+            res = self.client.parts.get_parts_in_partstudio(self.guess['did'], self.guess['wvm'], self.guess['eid'])
             res.raise_for_status()
-            return res.json()[constraints['part_number']]['partId']
+            return res.json()[part_number]['partId']
+
+        def get_mass_properties(self, part_id):
+            res = self.client.parts.get_mass_properties(self.guess["did"], self.guess['wvm_pair'], self.guess["eid"], part_id)
+            res.raise_for_status()
+            return res.json()
+
 
 
     @XBlock.json_handler
@@ -215,17 +269,18 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         """Check the answers given by the student against the constraints.
 
         This handler is called when the "Check" button is clicked and calls one of the check functions, as described
-        by the question type.
+        by the question type. It passes the guess to the checker, which performs all of the various checks.
         """
 
         try:
             self.score = 0
 
-            # Check the current guess against the constraints using the checker class.
+            # Check the current guess against the constraints using the checker class. To avoid passing around the url
+            # so much, the Checker class has the url components defined as fields
             responses = []
-            checker = self.Checker(self.client)
+            checker = self.Checker(self.client, guess)
             for check in self.d["checks"]:
-                response = checker.check(check, guess)
+                response = checker.check(check)
                 if response["correct"]:
                     self.score += check["points"]
                 responses.append(response)
@@ -236,9 +291,13 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
 
             status = {"responses": responses, "score": self.score, "max_score": self.max_score,
              "max_attempts": self.d["max_attempts"], "attempts": self.d["attempts"]}
-        except requests.exceptions.HTTPError as err:
+        except (requests.exceptions.HTTPError, pint.errors.DimensionalityError) as err:
             # Handle errors here. There should be some logic to turn scary errors into less scary errors for the user.
-            return {"error": err.response.json()['message']}
+            if isinstance(err, requests.exceptions.HTTPError):
+                return {"error": err.response.json()['message']}
+            elif isinstance(err, pint.errors.DimensionalityError):
+                return {"error": str(err)}
+
         return status
 
 
@@ -257,7 +316,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         """A canned scenario for display in the workbench."""
 
         return [
-            ("MyXBlock", """<myxblock max_attempts='3' question_type='simple_checker' d="{'type': 'simple_checker', 'checks':[{'type': 'volume'}, {'type': 'mass'}], 'max_attempts':10}" prompt='Design a great part according to this prompt'>
+            ("MyXBlock", """<myxblock max_attempts='3' question_type='simple_checker' d="{'type': 'simple_checker', 'checks':[{'type': 'volume'}, {'type': 'mass'}, {'type': 'center_of_mass'}], 'max_attempts':10}" prompt='Design a great part according to this prompt'>
              </myxblock>
              """
              )

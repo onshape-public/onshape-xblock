@@ -2,7 +2,7 @@
   "type": "mass",
   "points": 1,
   "constraints": {
-    "min": "4 kg",
+    "min": "0 kg",
     "max": "10 kg",
     "part_number": 0,
     "failure_message": "Your part's mass of {mass} is incorrect. It should be between {min_mass} and {max_mass}. {points}/{max_points}"

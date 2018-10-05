@@ -13,7 +13,10 @@ function MyXBlock(runtime, element, init_args) {
         var $status = $('.status', element);
         var $status_message = $('.status-message', element);
         var $check_list = $('.check-list', element);
+        // The correct flag is flipped when any response is marked as incorrect
+        var correct_flag = true
         $check_list.empty();
+
 
         for (x in responses) {
             var response = responses[x]
@@ -26,7 +29,7 @@ function MyXBlock(runtime, element, init_args) {
                 $status_message.text('Please put the element url within the document url editable text box.');
             }
             // The user answered correctly
-            if (response.correct) {
+            else if (response.correct && correct_flag) {
                 $status.removeClass('incorrect').addClass('correct');
                 $status.text('correct');
                 $status_message.text('Great job! All checks passed!');
@@ -37,6 +40,7 @@ function MyXBlock(runtime, element, init_args) {
                 $status.text('incorrect');
                 $status_message.text("The following checks don't pass:")
                 $check_list.append("<li>"+response.message+"</li>")
+                correct_flag = false
             }
         }
 
@@ -67,11 +71,17 @@ function MyXBlock(runtime, element, init_args) {
     }
 
     //data is passed in as the response from the call to check_answers
-    function updateStatus(data) {
-        if ('error' in data){
-            var $status_message = $('.status-message', element);
+    function updateStatus(data, status, error) {
+        var $status_message = $('.status-message', element);
+        // Catch errors from the server
+        if (status=="error"){
+            $status_message.text(error)
+        }
+        else if ('error' in data){
             $status_message.text(data.error)
-        } else{
+        }
+        // Catch Onshape errors
+        else{
             responses = data.responses
             updateResponseMessages(responses);
             UpdateScore(data);
@@ -86,6 +96,7 @@ function MyXBlock(runtime, element, init_args) {
             url: url,
             data: JSON.stringify(data),
             success: updateStatus,
+            error: updateStatus
         });
     }
 

@@ -1,0 +1,10 @@
+{
+  "type": "center_of_mass",
+  "points": 1,
+  "constraints": {
+    "target_centroid": [0,0,0],
+    "tolerance": "0.001",
+    "part_number": 0,
+    "failure_message": "Your part's center of mass, {guess_centroid} is incorrect. It should be within {target_centroid} with a tolerance of +/-{tolerance}. {points}/{max_points}"
+  }
+}

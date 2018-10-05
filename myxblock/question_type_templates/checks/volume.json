@@ -2,8 +2,8 @@
   "type": "volume",
   "points": 1,
   "constraints": {
-    "min": "5 in**3",
-    "max": "10 in**3",
+    "min": "0 in**3",
+    "max": "150 in**3",
     "part_number": 0,
     "failure_message": "Your part's volume of {volume} is incorrect. It should be between {min_volume} and {max_volume}. {points}/{max_points}"
   }
