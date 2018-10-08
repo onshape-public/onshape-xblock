@@ -1,0 +1,9 @@
+{
+  "type": "feature_list",
+  "points": 1,
+  "constraints": {
+    "configuration_list": [{"type":"List", "row_count":5},{"type": "Variable", "params_count": 5},{"type":"Checkbox"}],
+    "type_failure_message": "Your PartStudio has a {config_type_actual} in the configuration where it should have a {config_type_expected} configuration type.",
+    "count_failure_message": "Your PartStudio configuration's {config_type} should have {config_entry_count_expected}, but currently only has {config_entry_count_actual} {config_type_entries}."
+  }
+}
