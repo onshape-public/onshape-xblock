@@ -20,16 +20,16 @@ def parse_url(url):
     d["wvm_pair"] = (d["wvm_type"], d["wvm"])
     return d
 
-def quantify(s, default_units=u.m, error=None):
+def quantify(s, default_units=u.m, tolerance=None):
     """Take a string and turn it into a pint quantity. If the string doesn't have an associated unit, use the one
-    specified in default_units. Error specifies a relative error for the measurement. 0.1 means an error of +/-10%."""
+    specified in default_units. Error specifies a relative tolerance for the measurement. 0.1 means an tolerance of +/-10%."""
     q = u(str(s))
     if not isinstance(q, u.Quantity):
         q = q*u.dimensionless
     if isinstance(q, float) or q.units == u.dimensionless and default_units:
         q = q*default_units
-    if error:
-        q = q.plus_minus(float(error), relative=True)
+    if tolerance:
+        q = q.plus_minus(float(tolerance), relative=True)
     return q
 
 

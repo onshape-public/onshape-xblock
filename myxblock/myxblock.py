@@ -383,7 +383,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         """A canned scenario for display in the workbench."""
 
         return [
-            ("MyXBlock", """<myxblock max_attempts='3' question_type='simple_checker' d="{'type': 'simple_checker', 'checks':[{'type': 'volume'}, {'type': 'mass'}, {'type': 'center_of_mass'}, {'type': 'part_count'}, {'type': 'feature_list'}], 'max_attempts':10}" prompt='Design a great part according to this prompt'>
+            ("MyXBlock", """<myxblock max_attempts='3' question_type='simple_checker' d="{'type': 'simple_checker', 'checks':[{'type': 'volume'}, {'type': 'mass'}, {'type': 'center_of_mass'}, {'type': 'part_count'}, {'type': 'feature_list'}, {'type': 'context_count'}], 'max_attempts':10}" prompt='Design a great part according to this prompt'>
              </myxblock>
              """
              )
