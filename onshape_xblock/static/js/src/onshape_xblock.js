@@ -1,9 +1,9 @@
-/* Javascript for MyXBlock. */
+/* Javascript for Onshape_xblock. */
 function MyXBlockAside(runtime, element, block_element, init_args) {
-    return new MyXBlock(runtime, element, init_args);
+    return new Onshape_xblock(runtime, element, init_args);
 }
 
-function MyXBlock(runtime, element, init_args) {
+function Onshape_xblock(runtime, element, init_args) {
     // Call the python check_answers function when the user clicks
     var checkHandlerUrl = runtime.handlerUrl(element, 'check_answers');
 
@@ -90,7 +90,7 @@ function MyXBlock(runtime, element, init_args) {
 
     // Call the specified url with the user-specified document url.
     function callHandler(url) {
-        data = {"url": $('input.myxblock-documentUrl').val()}
+        data = {"url": $('input.onshape_xblock-documentUrl').val()}
         $.ajax({
             type: "POST",
             url: url,

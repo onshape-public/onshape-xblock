@@ -1,4 +1,5 @@
-from myxblock.utility import prepopulate_json, quantify, u, parse_url
+from onshape_xblock.utility import prepopulate_json, quantify, u, parse_url
+from onshape_xblock.serialize import Serialize
 import os
 
 def test_prepopulate_json():
@@ -24,3 +25,18 @@ def test_parse_url():
                                                                                  'wvm': 'ef55e51efbb9f35e80894316',
                                                                                  'wvm_pair': ('w', 'ef55e51efbb9f35e80894316'),
                                                                                  'wvm_type': 'w'}
+
+
+
+def test_serialization():
+    from onshape_xblock.checkers.checker_test import CheckerTest
+    from onshape_xblock.checkers.checker_volume import CheckerVolume
+    my_instance = CheckerTest("This is a test")
+    my_serialization = Serialize.serialize(my_instance)
+    my_second_instance = Serialize.deserialize(my_serialization)
+    assert(isinstance(my_second_instance, CheckerTest))
+
+    a_serializable_string = """{"py/object": "onshape_xblock.checkers.checker_volume.CheckerVolume", "points": 1, "failure_message": "Your part's volume of {volume} is incorrect. It should be between {min_volume} and {max_volume}. {points}/{max_points}", "name": "Check Volume", "constraints": {"py/object": "onshape_xblock.checkers.checker_volume.ConstraintVolume", "part_number": 0}}"""
+
+    volume_deserialized = Serialize.deserialize(a_serializable_string)
+    assert (isinstance(volume_deserialized, CheckerVolume))

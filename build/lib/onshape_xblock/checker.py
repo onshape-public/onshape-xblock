@@ -2,7 +2,8 @@ from .utility import parse_url, u, quantify
 
 
 class Checker:
-    """The Checker contains a number of check_ functions. Check functions provide validation checks for a given document/element. A check is made based on the question type.
+    """The Checker contains a number of check_ functions. Check functions provide validation checks for a given
+    document/element. A check is made based on the question type.
     For example, a volume question type will always call the "check_volume" function defined. Check functions need to at
     the very least provide a dictionary containing a boolean under the key "correct" to indicate whether or not the
     user satisfied the check. Other common response keys are "message", "actions", etc..."""

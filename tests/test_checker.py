@@ -1,7 +1,7 @@
-from myxblock.checker import Checker
+from onshape_xblock.checker import Checker
 import pytest
-from testpackage.onshape import Onshape
-from myxblock._keys import keys
+from onshape_xblock.onshape import Onshape
+from onshape_xblock._keys import keys
 
 # This is V1 of Pipe PartStudio
 guess = {

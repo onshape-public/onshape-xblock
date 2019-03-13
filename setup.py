@@ -1,4 +1,4 @@
-"""Setup for myxblock XBlock."""
+"""Setup for onshape_xblock XBlock."""
 
 import os
 
@@ -22,22 +22,24 @@ def package_data(pkg, roots):
 
 
 setup(
-    name='myxblock-xblock',
+    name='onshape_xblock',
     version='0.1',
-    description='myxblock XBlock',   # TODO: write a better description.
-    license='UNKNOWN',          # TODO: choose a license: 'AGPL v3' and 'Apache 2.0' are popular.
+    description='The Onshape Xblock used to grade Onshape elements according to a number of criteria.',
+    license='MIT',
     packages=[
-        'myxblock',
+        'onshape_xblock',
     ],
     install_requires=[
         'utils',
-        'XBlock',
+        'xblock',
         'xblock-utils',
+        'pathlib',
+        'pint',
     ],
     entry_points={
         'xblock.v1': [
-            'myxblock = myxblock:MyXBlock',
+            'onshape_xblock = onshape_xblock:OnshapeXBlock',
         ]
     },
-    package_data=package_data("myxblock", ["static", "public"]),
+    package_data=package_data("onshape_xblock", ["static", "public"]),
 )

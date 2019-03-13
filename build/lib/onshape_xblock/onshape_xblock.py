@@ -12,14 +12,12 @@ show visuals. Anything that needs to be hidden from the user should not go in d.
 import pkg_resources
 import posixpath
 import requests
-from testpackage.onshape import Onshape
 from urlparse import urlparse
 from xblock.core import XBlock
 from xblock.fields import Boolean, Float, Integer, Scope, String, Dict
 from xblock.fragment import Fragment
 from xblockutils.resources import ResourceLoader
 from xblockutils.studio_editable import StudioEditableXBlockMixin
-from _keys import keys
 import json
 import os, sys
 import inspect
@@ -35,9 +33,18 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
     A generic Onshape XBlock that can be configured to validate all sorts of parts of an onshape model.
     """
 
-    # create instance of the onshape client; change key to test on another stack
-    client = Onshape(access=keys["access"], secret=keys["secret"], target=keys["target"])
-
+    api_access_key = String(
+        display_name='API Access Key',
+        help='The access key used to check the documents.',
+        scope=Scope.settings,
+        default='Please paste your access key from https://dev-portal.onshape.com'
+    )
+    api_secret_key = String(
+        display_name='Display Name',
+        help='The secret key used to check the documents.',
+        scope=Scope.settings,
+        default='Please paste your secret key from https://dev-portal.onshape.com'
+    )
     display_name = String(
         display_name='Display Name',
         help='The title Studio uses for the component.',
@@ -109,7 +116,7 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
 
     def student_view(self, context=None):
         """
-        The primary view of the MyXBlock, shown to students
+        The primary view of the Onshape_xblock, shown to students
         when viewing courses.
         """
         # Update the default dictionary with the user-specified values.
@@ -123,19 +130,19 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
             d=self.d,
         )
 
-        html = loader.render_django_template('templates/html/myxblock.html', context)
+        html = loader.render_django_template('templates/html/onshape_xblock.html', context)
 
         css_context = dict(
             correct_icon=self.runtime.local_resource_url(self, 'public/img/correct-icon.png'),
             incorrect_icon=self.runtime.local_resource_url(self, 'public/img/incorrect-icon.png'),
             unanswered_icon=self.runtime.local_resource_url(self, 'public/img/unanswered-icon.png'),
         )
-        css = loader.render_template('templates/css/myxblock.css', css_context)
+        css = loader.render_template('templates/css/onshape_xblock.css', css_context)
 
         frag = Fragment(html)
         frag.add_css(css)
-        frag.add_javascript(self.resource_string("static/js/src/myxblock.js"))
-        frag.initialize_js('MyXBlock', {"d": self.d, "score": self.score, "max_score": self.max_score})
+        frag.add_javascript(self.resource_string("static/js/src/onshape_xblock.js"))
+        frag.initialize_js('Onshape_xblock', {"d": self.d, "score": self.score, "max_score": self.max_score})
         return frag
 
     @XBlock.json_handler
@@ -186,8 +193,8 @@ class MyXBlock(StudioEditableXBlockMixin, XBlock):
         """A canned scenario for display in the workbench."""
 
         return [
-            ("MyXBlock", """<myxblock max_attempts='3' question_type='simple_checker' d="{'type': 'simple_checker', 'checks':[{'type': 'volume'}, {'type': 'mass'}, {'type': 'center_of_mass'}, {'type': 'part_count'}, {'type': 'feature_list'}], 'max_attempts':10}" prompt='Design a great part according to this prompt'>
-             </myxblock>
+            ("Onshape_xblock", """<onshape_xblock max_attempts='3' question_type='simple_checker' d="{'type': 'simple_checker', 'checks':[{'type': 'volume'}, {'type': 'mass'}, {'type': 'center_of_mass'}, {'type': 'part_count'}, {'type': 'feature_list'}], 'max_attempts':10}" prompt='Design a great part according to this prompt'>
+             </onshape_xblock>
              """
              )
         ]
