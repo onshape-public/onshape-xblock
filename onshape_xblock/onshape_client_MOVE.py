@@ -2,6 +2,7 @@ from onshape_client.configuration import Configuration
 import onshape_client
 from pathlib import Path
 from ruamel.yaml import YAML
+import os
 
 class Client:
     """
@@ -28,13 +29,16 @@ class Client:
         conf_file.
     """
     def __init__(self, keys_file="~/.onshape_client_config.yaml", configuration=None, stack_key=None):
-
+        keys_file = os.path.expanduser(keys_file)
         if configuration:
             final_configuration = configuration
         elif keys_file:
-            yaml = YAML()
-            configurations_file = yaml.load(Path(keys_file))
-            final_configuration = configurations_file[stack_key if stack_key else configurations_file['default_stack']]
+            try:
+                yaml = YAML()
+                configurations_file = yaml.load(Path(keys_file))
+                final_configuration = configurations_file[stack_key if stack_key else configurations_file['default_stack']]
+            except KeyError as e:
+                raise KeyError("Your creds file is not constructed as expected: {}".format(e))
         else:
             raise EnvironmentError("API keys were not properly set.")
 

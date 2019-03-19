@@ -4,8 +4,7 @@ function MyXBlockAside(runtime, element, block_element, init_args) {
 }
 
 function Onshape_xblock(runtime, element, init_args) {
-    // Call the python check_answers function when the user clicks
-    var checkHandlerUrl = runtime.handlerUrl(element, 'check_answers');
+
 
     // Update the feedback for the user. If multiple checks, this will display all the check messages of the checks
     // that didn't pass.
@@ -23,7 +22,7 @@ function Onshape_xblock(runtime, element, init_args) {
 
 
             // The user has not yet answered the question
-            if (response.correct==undefined){
+            if (response.correct===undefined){
                 $status.removeClass('incorrect correct');
                 $status.text('unanswered');
                 $status_message.text('Please put the element url within the document url editable text box.');
@@ -35,7 +34,7 @@ function Onshape_xblock(runtime, element, init_args) {
                 $status_message.text('Great job! All checks passed!');
             }
             // The user answered incorrectly
-            else if (response.correct==false) {
+            else if (response.correct===false) {
                 $status.removeClass('correct').addClass('incorrect');
                 $status.text('incorrect');
                 $status_message.text("The following checks don't pass:")
@@ -70,36 +69,18 @@ function Onshape_xblock(runtime, element, init_args) {
         $('.submission-feedback', element).text(feedback_msg);
     }
 
-    //data is passed in as the response from the call to check_answers
-    function updateStatus(data, status, error) {
-        var $status_message = $('.status-message', element);
-        // Catch errors from the server
-        if (status=="error"){
-            $status_message.text(error)
-        }
-        else if ('error' in data){
-            $status_message.text(data.error)
-        }
-        // Catch Onshape errors
-        else{
-            responses = data.responses
-            updateResponseMessages(responses);
-            UpdateScore(data);
-        }
+    //HANDLERS - below are the handler calls for various actions.
+
+    // CHECK THE ONSHAPE ELEMENT
+    $('.action .check', element).click(checkAnswer);
+    // To be called when the check button is clicked
+    function checkAnswer(){
+        url = $("#onshape_url")[0].value;
+        callHandler({url : handlerUrl("check_answers"), data:{"url": url}, onSuccess: updateFeedback});
     }
 
-    // Call the specified url with the user-specified document url.
-    function callHandler(url) {
-        data = {"url": $('input.onshape_xblock-documentUrl').val()}
-        $.ajax({
-            type: "POST",
-            url: url,
-            data: JSON.stringify(data),
-            success: updateStatus,
-            error: updateStatus
-        });
-    }
-
+    // GET HELP WITH THIS XBLOCK
+    $('#activetable-help-button', element).click(toggleHelp);
     function toggleHelp(e) {
         var $help_text = $('#activetable-help-text', element), visible;
         $help_text.toggle();
@@ -108,25 +89,65 @@ function Onshape_xblock(runtime, element, init_args) {
         $(this).attr('aria-expanded', visible);
     }
 
-    //Executes the method defined with the parameters defined.
-    function executeMethod(method_definition, data){
-        if (getAllFunctions().includes(method_definition.method_name)){
-            eval(data.method_definition.method_name+"(data);")
+    //data is passed in as the response from the call to check_answers
+    function updateFeedback(data, status, error) {
+        var $status_message = $('.status-message', element);
+        // Catch errors from the server
+        if (status==="error"){
+            $status_message.text(error)
+        }
+        else if ('error' in data){
+            $status_message.text(data.error)
+        }
+        // Catch Onshape errors
+        else{
+            responses = data.responses;
+            updateResponseMessages(responses);
+            UpdateScore(data);
         }
     }
-    //Get all the functions defined in the window
-    function getAllFunctions(){
-        var allfunctions=[];
-          for ( var i in window) {
-        if((typeof window[i]).toString()=="function"){
-            allfunctions.push(window[i].name);
-          }
-       }
+
+    // ----------------------- UTILITY FUNCTIONS BELOW --------------------------
+
+    // Call the python check_answers function when the user clicks
+    function handlerUrl(handlerName) {
+        return runtime.handlerUrl(element, handlerName);
     }
 
-    $('#activetable-help-button', element).click(toggleHelp);
-    $('.action .check', element).click(function (e) { callHandler(checkHandlerUrl); });
-    updateStatus(init_args);
+    // Call the specified url with the user-specified document url.
+    function callHandler(opts) {
+
+        const url = opts["url"];
+        let data = opts["data"];
+        let onSuccess = opts["onSuccess"];
+        let onFailure = opts["onFailure"];
+
+        if (onFailure === undefined) {
+            onFailure = errorPrinter
+        }
+        if (data === undefined) {
+             $.ajax({
+                type: "GET",
+                url: url,
+                success: onSuccess,
+                error: onFailure
+            });
+        }
+        if (data) {
+             $.ajax({
+                type: "POST",
+                url: url,
+                data: JSON.stringify(data),
+                success: onSuccess,
+                error: onFailure
+            });
+        }
+
+    }
+
+    function errorPrinter(e){
+        console.log(e);
+    }
 
     $(function ($) {
         /* Here's where you'd do things on page load. */

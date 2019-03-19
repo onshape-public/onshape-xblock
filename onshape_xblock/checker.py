@@ -1,4 +1,4 @@
-from .utility import parse_url, u, quantify
+from .utility import  u, quantify, parse_url
 
 
 class Checker:

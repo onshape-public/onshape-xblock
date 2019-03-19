@@ -5,3 +5,5 @@ myxblock/_keys.py
 *.log
 coverage.xml
 .coverage
+build/
+dist/

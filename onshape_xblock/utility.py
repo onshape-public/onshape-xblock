@@ -6,23 +6,11 @@ from jsonpickle import encode, decode
 
 u = pint.UnitRegistry()
 
-def parse_url(url):
-    """Parse an Onshape element url into a dictionary containing did, eid, and wvm_pair"""
-    path = urlparse.urlparse(url).path.split('/')
-    # Expected parameters in the path
-    d_expected = {3: "wvm_type", 2: "did", 6: "eid", 4: "wvm"}
-    d = {}
-    for index, name in d_expected.items():
-        try:
-            d[name] = path[index]
-        except IndexError:
-            pass
-    d["wvm_pair"] = (d["wvm_type"], d["wvm"])
-    return d
-
 def quantify(s, default_units=u.m, tolerance=None):
     """Take a string and turn it into a pint quantity. If the string doesn't have an associated unit, use the one
     specified in default_units. Error specifies a relative tolerance for the measurement. 0.1 means an tolerance of +/-10%."""
+    if isinstance(s, u.Quantity):
+        return s
     q = u(str(s))
     if not isinstance(q, u.Quantity):
         q = q*u.dimensionless
@@ -73,3 +61,5 @@ def prepopulate_json(d, path_to_json_root):
 
     return d
 
+def parse_url():
+    raise NotImplemented

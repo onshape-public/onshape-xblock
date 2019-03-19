@@ -1,5 +1,5 @@
 {
-  "type": "feature_list",
+  "type": "configuration",
   "points": 1,
   "constraints": {
     "configuration_list": [{"type":"List", "row_count":5},{"type": "Variable", "params_count": 5},{"type":"Checkbox"}],

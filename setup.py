@@ -35,6 +35,7 @@ setup(
         'xblock-utils',
         'pathlib',
         'pint',
+        'jinja2'
     ],
     entry_points={
         'xblock.v1': [
