@@ -23,9 +23,12 @@ def test_quantify():
 
 def test_parse_url():
     from onshape_xblock.onshape_url import OnshapeElement
-    onshape_url = OnshapeElement("https://demo - c.dev.onshape.com/documents/bbf2f04e5541d6ce51dae74a/w"
-                     "/ef55e51efbb9f35e80894316/e/7fbd104f45e32b7184862b9b")
-    assert onshape_url.did == "bbf2f04e5541d6ce51dae74a"
-    assert onshape_url.wvm == "w"
-    assert onshape_url.wvmid == "ef55e51efbb9f35e80894316"
-    assert onshape_url.eid == "7fbd104f45e32b7184862b9b"
+    onshape_url = OnshapeElement("https://cad.onshape.com/documents/cca81d10f239db0db9481e6f/v/39711aea80fd4100faa1b147/e/69c9eedda86512966b20bc90")
+    assert onshape_url.did == "cca81d10f239db0db9481e6f"
+    assert onshape_url.wvm == "v"
+    assert onshape_url.wvmid == "39711aea80fd4100faa1b147"
+    assert onshape_url.eid == "69c9eedda86512966b20bc90"
+    assert onshape_url.get_url() == "https://cad.onshape.com/documents/cca81d10f239db0db9481e6f/v/39711aea80fd4100faa1b147/e/69c9eedda86512966b20bc90"
+    assert onshape_url.get_microversion_url() == "https://cad.onshape.com/documents/cca81d10f239db0db9481e6f/v/39711aea80fd4100faa1b147/m/4b471df5f9c9590b2a2496cf/e/69c9eedda86512966b20bc90"
+    onshape_element_long_form = OnshapeElement("https://cad.onshape.com/documents/cca81d10f239db0db9481e6f/w/80887f5994121967bf4d59a6/m/aa1867247974aa51baf6da3d/e/69c9eedda86512966b20bc90")
+    assert onshape_element_long_form.optional_microversion == "aa1867247974aa51baf6da3d"

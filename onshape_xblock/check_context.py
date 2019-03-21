@@ -2,13 +2,21 @@ from onshape_client_MOVE import Client
 from serialize import Serialize
 from onshape_url import OnshapeElement
 
+
 class CheckContext(object):
     def __init__(self, check_init_list=None, client=None, onshape_element=None):
         self.check_init_list = check_init_list
-        self.client = client
-        self.onshape_element = onshape_element
+        self.client = client if client else Client()
+        self.checks = []
+        if onshape_element:
+            self.onshape_element = onshape_element if isinstance(onshape_element, OnshapeElement) else OnshapeElement(onshape_element)
+        else:
+            self.onshape_element = None
+        if check_init_list:
+            for check_init_args in check_init_list:
+                self.checks.append(self.create_check(check_init_args))
 
-    def perform_all_checks(self, onshape_url=None):
+    def perform_all_checks(self):
         """Perform all the checks indicated in the check context
 
         Parameters
@@ -21,13 +29,8 @@ class CheckContext(object):
             A list of feedback items to be displayed to the student
         """
         feedback_list = []
-        if onshape_url:
-            onshape_element = OnshapeElement(onshape_url)
-            self.onshape_element = onshape_element
-        for check_init_args in self.check_init_list:
-            check = self.create_check(check_init_args)
-            check.execute_check()
-            feedback_list.append(check.feedback)
+        for check in self.checks:
+            feedback_list.append(check.get_display_feedback())
         return feedback_list
 
     def create_check(self, check_init_args):
@@ -44,9 +47,8 @@ class CheckContext(object):
 
         """
         # Inject fields that we want in all clients into the mix.
-        if "client" not in check_init_args:
-            check_init_args["client"] = self.client
-        if "onshape_element" not in check_init_args:
-            check_init_args["onshape_element"] = self.onshape_element
-        check = Serialize.init_class_based_on_type(package_name="onshape_xblock.checks", **check_init_args)
+        check = Serialize.init_class_based_on_type(package_name="onshape_xblock.checks",
+                                                   client=self.client,
+                                                   onshape_element=self.onshape_element,
+                                                   **check_init_args)
         return check

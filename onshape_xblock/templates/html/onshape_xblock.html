@@ -11,25 +11,23 @@
 
     <h3 class="myxblock-prompt">{{ prompt }}</h3>
 
-    {% if description %}
-    <div class="prompt">
-        <p class="description">{{ description }}</p>
-    </div>
-    {% endif %}
-
     <div>
-        <label for="onshape_url" class="sr">Document URL:</label>
+        <label for="onshape_url" class="sr">Onshape Element URL:</label>
         <input id="onshape_url" class="myxblock-documentUrl" type="text"/>
     </div>
 
-    <div class="action">
-        <button class="check"><span class="check-label">Check Your Answer</span></button>
+    <div class="action" >
+        <button id="check_button"><span class="check-label">Check Your Answer</span></button>
     </div>
 
-    <p class="status" aria-live="polite"></p>
-    <div class="status-message" aria-live="polite" ></div>
-    <ul class="check-list" aria-live="polite" ></ul>
-    <div class="submission-feedback" aria-live="polite" ></div>
+    <div id="attempt_counter" class="submission-feedback" aria-live="polite" ></div>
+    <div id="status_message"></div>
+    <ul id="response_list" class="check-list" aria-live="polite" ></ul>
+    <div id="total_points_counter" class="submission-feedback" aria-live="polite" ></div>
+
+    <div class="action">
+        <button id="final_submit_button"><span class="check-label">Submit Current Answer</span></button>
+    </div>
 
 </div>
 
