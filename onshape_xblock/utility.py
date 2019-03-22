@@ -4,6 +4,7 @@ import json
 import pint
 from jsonpickle import encode, decode
 
+
 u = pint.UnitRegistry()
 
 def quantify(s, default_units=u.m, tolerance=None):
@@ -63,3 +64,8 @@ def prepopulate_json(d, path_to_json_root):
 
 def parse_url():
     raise NotImplemented
+
+def res_to_dict(res):
+    """Convert the standard http response to a dict of the body"""
+    return json.loads(res.data)
+

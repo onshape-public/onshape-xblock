@@ -1,38 +1,31 @@
 from onshape_xblock.checks.check_standard_imports import *
 from onshape_xblock.utility import quantify, u
-from onshape_xblock.feedback import Feedback
 
 
-class CheckVolume(CheckBase):
-    """A volume check
+class CheckMass(CheckBase):
+    """A Mass Check
 
-    This volume checks whether or not the specified Onshape part has a volume in between the min and max specified. """
+    This mass check checks whether or not the specified Onshape part has a volume in between the min and max specified. """
 
-    failure_message_template = "Your part's volume of {volume} is incorrect. It should be between {min_volume} and {max_volume}. {points}/{max_points}"
-    success_message_template = "Your part's volume of {volume} is correct! You've been awarded {points}/{max_points}!"
+    failure_message_template = "Your part's mass of {mass} is incorrect. It should be between {{min_mass}} and {{max_mass}}. {{points}}/{{max_points}}"
 
     def __init__(self,
-                 min=0*u.m,
-                 max=1*u.m,
+                 min_mass=0*u.kg,
+                 max_mass=1*u.kg,
                  part_number=0,
                  **kwargs):
-        super(CheckVolume, self).__init__(name="Check Volume",
+        super(CheckMass, self).__init__(name="Check Mass",
                                           **kwargs)
-        self.min = quantify(min, default_units=u.m**3)
-        self.max = quantify(max, default_units=u.m**3)
+        self.min_mass = quantify(min_mass, default_units=u.kg)
+        self.max_mass = quantify(max_mass, default_units=u.kg)
         self.part_number = part_number
+        self.mass = None
 
     def execute_check(self):
         part_id = self.get_part_id(self.part_number)
         mass_properties = self.get_mass_properties(part_id)
-        volume = quantify(mass_properties.bodies["-all-"].volume[0], default_units=u.m**3)
-        self.feedback = Feedback()
-        self.feedback.volume = quantify(mass_properties.bodies["-all-"].volume[0], default_units=u.m**3)
-        self.feedback.passed = (self.min < volume < self.max)
-        self.feedback.min_volume = self.min
-        self.feedback.max_volume = self.max
-        self.feedback.points = self.points if self.feedback.passed else 0
-        self.feedback.max_points = self.points
+        self.mass = quantify(mass_properties.bodies["-all-"].mass[0], default_units=u.kg)
+        self.passed = (self.min_mass < self.mass < self.max_mass)
 
 
 

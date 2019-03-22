@@ -4,6 +4,8 @@ from ..onshape_client_MOVE import Client
 import importlib
 from ..onshape_url import OnshapeElement
 from jinja2 import Template
+from ..utility import res_to_dict
+
 
 class CheckBase(object):
     """Instructions for making a new check:
@@ -34,7 +36,7 @@ class CheckBase(object):
         # A key value map for template substitutions
         self.template_context = {"a_test_variable_name": "a test variable value"}
 
-        self.onshape_element = onshape_element if isinstance(onshape_element, OnshapeElement) \
+        self.onshape_element = onshape_element if isinstance(onshape_element, OnshapeElement) or not onshape_element \
             else OnshapeElement(onshape_element)
 
         # The failure message if the check has failed
@@ -69,10 +71,6 @@ class CheckBase(object):
     def failure_message_template(self):
         pass
 
-    @abstractproperty
-    def success_message_template(self):
-        pass
-
     #     Useful shared client functions.
 
     def get_part_id(self, part_number):
@@ -85,22 +83,20 @@ class CheckBase(object):
         return parts
 
     def get_mass_properties(self, part_id):
-        res = self.client.part_studios_api.get_mass_properties(self.onshape_element.did, self.onshape_element.wvm,
+        mass_props = self.client.part_studios_api.get_mass_properties(self.onshape_element.did, self.onshape_element.wvm,
                                                                self.onshape_element.wvmid, self.onshape_element.eid,
                                                                part_id=[part_id])
-        return res
+        return mass_props
 
     def get_features(self):
         res = self.client.part_studios_api.get_features(self.onshape_element.did, self.onshape_element.wvm, self.onshape_element.wvmid,
                                                         self.onshape_element.eid)
-        res.raise_for_status()
-        return res.json()
+        return res_to_dict(res)
 
     def get_configuration(self):
-        res = self.client.elements_api.get_configuration3(self.onshape_element.did, self.onshape_element.wvm, self.onshape_element.wvmid,
-                                                          self.onshape_element.eid, _preload_content=False)
-        res.raise_for_status()
-        return res.json()
+        res = self.client.part_studios_api.get_configuration4(self.onshape_element.did, self.onshape_element.wvm, self.onshape_element.wvmid, self.onshape_element.eid, _preload_content=False)
+
+        return res_to_dict(res)
 
     def format_failure_message(self):
         self.failure_message = Template(self.failure_message_template).render(self.__dict__)
