@@ -67,21 +67,21 @@ function OnshapeBlock(runtime, element, init_args) {
         if (submitted) {
             $check_button.hide();
             $final_submit_button.hide();
-            $attempt_counter.text("YOUR ONSHAPE ELEMENT HAS BEEN SUBMITTED")
+            $attempt_counter.text("Your Onshape Element has been submitted")
             $onshape_url.replaceWith("<a href="+ submitted_url +">"+ submitted_url + "</a>")
         }
         var feedback_msg;
-        $total_points_counter.text('(' + current_score + '/' + max_points + ' POINTS)');
+        $total_points_counter.text('(' + current_score + '/' + max_points + ' Points)');
         updateCheckButton();
     }
 
     function updateCheckButton() {
         if (max_attempts > 0 && !submitted) {
-            attempts_msg = '('+ attempts_made + '/' + max_attempts + ' CHECKS USED)';
+            attempts_msg = '('+ attempts_made + '/' + max_attempts + ' Checks Used)';
             $attempt_counter.text(attempts_msg);
 
             if (attempts_made == max_attempts - 1) {
-                $check_button.text('FINAL CHECK');
+                $check_button.text('Final Check');
             }
             else if (attempts_made >= max_attempts) {
                 $check_button.hide();
@@ -129,6 +129,7 @@ function OnshapeBlock(runtime, element, init_args) {
 
     //data is passed in as the response from the call to check_answers
     function updateFeedback(data, status, error) {
+        bringButtonsBack();
         // Catch errors from the server
         if (status==="error"){
             $status_message.text(error)
@@ -143,7 +144,6 @@ function OnshapeBlock(runtime, element, init_args) {
 
             UpdateScore();
         }
-        bringButtonsBack();
     }
 
     function updateFlags(data){
@@ -196,12 +196,29 @@ function OnshapeBlock(runtime, element, init_args) {
         console.log(e);
     }
 
+    const waitingButtonHtml = "<span class=\"spinner-border spinner-border-sm\" role=\"status\" aria-hidden=\"true\"></span>\n" +
+            "  <span class=\"sr-only\">Loading...</span>"
+
     function makeButtonsWait(){
         console.log("buttons should be waiting");
+        $check_button.text("");
+        $check_button.prepend( waitingButtonHtml );
+        $check_button.attr("disabled","");
+
+        $final_submit_button.text("");
+        $final_submit_button.prepend( waitingButtonHtml );
+        $final_submit_button.attr("disabled","");
+
     }
 
     function bringButtonsBack(){
         console.log("buttons should be back!");
+
+        $check_button.text("Check Answer");
+        $check_button.removeAttr("disabled");
+
+        $final_submit_button.text("Submit Current Answer");
+        $final_submit_button.removeAttr("disabled");
     }
 
     $(function ($) {

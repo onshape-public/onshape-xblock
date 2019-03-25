@@ -3,31 +3,37 @@
 
     {% if help_text %}
     <div class="activetable-help">
-      <button id="activetable-help-button" aria-controls="activetable-help-text" aria-haspopup="true"
-              aria-expanded="false">+help</button>
-      <p id="activetable-help-text">{{ help_text }}</p>
+        <button id="activetable-help-button" aria-controls="activetable-help-text" aria-haspopup="true"
+                aria-expanded="false">+help
+        </button>
+        <p id="activetable-help-text">{{ help_text }}</p>
     </div>
     {% endif %}
 
     <h3 class="myxblock-prompt">{{ prompt }}</h3>
 
-    <div>
-        <label for="onshape_url" class="sr">Onshape Element URL:</label>
-        <input id="onshape_url" class="myxblock-documentUrl" type="text"/>
-    </div>
 
-    <div class="action" >
-        <button id="check_button"><span class="check-label">Check Your Answer</span></button>
-    </div>
 
-    <div id="attempt_counter" class="submission-feedback" aria-live="polite" ></div>
-    <div id="status_message"></div>
-    <ul id="response_list" class="check-list" aria-live="polite" ></ul>
-    <div id="total_points_counter" class="submission-feedback" aria-live="polite" ></div>
+    <div id="total_points_counter" class="submission-feedback" aria-live="polite"></div>
 
-    <div class="action">
-        <button id="final_submit_button"><span class="check-label">Submit Current Answer</span></button>
-    </div>
+
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet"/>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet"/>
+
+
+    <form>
+        <form class="form-inline">
+            <div class="form-group mx-sm-3 mb-2">
+                <label for="onshape_url" class="sr-only">Onshape Element URL</label>
+                <input type="url" class="form-control" id="onshape_url" placeholder="Onshape Element URL">
+            </div>
+            <button id="check_button" type="submit" class="btn btn-primary mb-2">Check Answer</button>
+        </form>
+        <div id="attempt_counter" class="submission-feedback"></div>
+        <div id="status_message"></div>
+        <ul id="response_list" class="check-list"></ul>
+        <button type="submit" id="final_submit_button" class="btn btn-primary">Submit Current Answer</button>
+    </form>
 
 </div>
 

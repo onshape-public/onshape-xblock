@@ -11,32 +11,23 @@ software keeps track of the xblock state by persisting those fields to a databas
 """
 
 import pkg_resources
-import posixpath
-import requests
-from urlparse import urlparse
 from xblock.core import XBlock
 from xblock.fields import Boolean, Float, Integer, Scope, String, Dict, List
 from xblock.fragment import Fragment
 from xblockutils.resources import ResourceLoader
 from xblockutils.studio_editable import StudioEditableXBlockMixin
 import json
-import os, sys
-import inspect
-from .utility import prepopulate_json
 import pint
-from .checks.check_base import CheckBase
-from .serialize import Serialize
 from check_context import CheckContext
 import logging
 import traceback
-from datetime import datetime
 from onshape_client_MOVE import Client
 from .onshape_url import OnshapeElement
 
 loader = ResourceLoader(__name__)  # pylint: disable=invalid-name
 
-log_file_name = 'logs/onshape_xblock_{}.log'.format(datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
-logging.basicConfig(filename=log_file_name,level=logging.DEBUG)
+# log_file_name = 'logs/onshape_xblock_{}.log'.format(datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
+logging.basicConfig(level=logging.DEBUG)
 logging.debug("Logs have started.")
 
 
@@ -206,12 +197,9 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         """Evaluates and sets the necessary headers on the Onshape block from performing the checks."""
         try:
             raise error
-        except (requests.exceptions.HTTPError, pint.errors.DimensionalityError) as err:
+        except (pint.errors.DimensionalityError) as err:
             # Handle errors here. There should be some logic to turn scary errors into less scary errors for the user.
-            if isinstance(err, requests.exceptions.HTTPError):
-                self.error = err.response.json()['message']
-            elif isinstance(err, pint.errors.DimensionalityError):
-                self.error = str(err)
+            self.error = str(err)
 
         except Exception as e:
             logging.error(traceback.format_exc())
