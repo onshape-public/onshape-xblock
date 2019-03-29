@@ -7,3 +7,5 @@ coverage.xml
 .coverage
 build/
 dist/
+
+node_modules/

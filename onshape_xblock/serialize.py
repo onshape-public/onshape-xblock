@@ -12,7 +12,7 @@ class Serialize(jsonpickle.handlers.BaseHandler):
         return jsonpickle.decode(serialized_thing)
 
     @staticmethod
-    def init_class_list(input_list, default_package_name="onshape_xblock.checks"):
+    def init_class_list(input_list, default_package_name="onshape_xblock.checks", init_class=True):
         """Call the init methods for each element of the list. The type specifies both the module and the class name.
         There is an implicit assumption that these follow this pattern: my_amazing_class.MyAmazingClass.
 
@@ -23,6 +23,8 @@ class Serialize(jsonpickle.handlers.BaseHandler):
              by the 'type' param for each dict.
         default_package_name: :obj:`str`
             Optional name for the package from which to initialize the class if not defined within the list element.
+        init_class: :obj:`bool`
+            If True, this will initialize the class. Otherwise, it will return the static class
 
         Returns
         -------
@@ -35,20 +37,24 @@ class Serialize(jsonpickle.handlers.BaseHandler):
         final_list = []
         for class_args in input_list:
             if "package_name" not in class_args:
-                class_args["package_name"] = default_package_name
-            final_list.append(Serialize.init_class_based_on_type(**class_args))
-
+                package_name = default_package_name
+            else:
+                package_name = class_args["package_name"]
+            final_list.append(Serialize.init_class_based_on_type(package_name=package_name, init_class=init_class, **class_args))
         return final_list
 
     @staticmethod
-    def init_class_based_on_type(package_name=None, type=None, **class_init_args):
+    def init_class_based_on_type(package_name=None, type=None, init_class=True, **class_init_args):
         if not type:
             raise AttributeError("Must define a checker type.")
         module_name = package_name + "." + type
         class_name = Serialize.to_pascal_case(type)
         module = importlib.import_module(module_name)
         class_ = getattr(module, class_name)
-        return class_(**class_init_args)
+        if init_class:
+            return class_(**class_init_args)
+        else:
+            return class_
 
     @staticmethod
     def to_pascal_case(snake_str):

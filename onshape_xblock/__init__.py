@@ -1,1 +1,1 @@
-from .onshape_xblock import OnshapeXBlock
+from .onshape_xblock_entry import OnshapeXBlock

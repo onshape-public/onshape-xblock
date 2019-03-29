@@ -1,4 +1,5 @@
 /* Javascript for Onshape_xblock. */
+import * as $ from "jquery";
 function MyXBlockAside(runtime, element, block_element, init_args) {
     return new OnshapeBlock(runtime, element, init_args);
 }
@@ -38,6 +39,9 @@ function OnshapeBlock(runtime, element, init_args) {
         // The correct flag is flipped when any response is marked as incorrect
         var correct_flag = true;
         $response_list.empty();
+
+        //const html = "<p>TESTING</p>"
+        //$response_list.append("<li>"+html+"</li>")
 
 
         for (x in response_list) {

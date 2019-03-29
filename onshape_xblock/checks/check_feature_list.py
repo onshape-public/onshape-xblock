@@ -1,6 +1,5 @@
 from onshape_xblock.checks.check_standard_imports import *
 from onshape_xblock.utility import quantify, u
-from onshape_xblock.feedback import Feedback
 
 
 class CheckVolume(CheckBase):

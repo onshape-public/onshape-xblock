@@ -1,5 +1,5 @@
 import urlparse
-from .onshape_client_MOVE import Client
+from onshape_client.client import Client
 import json
 
 class OnshapeElement(object):

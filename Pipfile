@@ -6,9 +6,10 @@ verify_ssl = true
 [dev-packages]
 pytest = "*"
 twine = "*"
+onshape-xblock = {path = ".",editable = true}
 
 [packages]
-onshape-xblock = {path = ".",editable = true}
+ruamel-yaml = "*"
 
 [requires]
 python_version = "2.7"

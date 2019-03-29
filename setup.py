@@ -23,7 +23,7 @@ def package_data(pkg, roots):
 
 setup(
     name='onshape_xblock',
-    version='0.0.4',
+    version='0.0.22',
     description='The Onshape Xblock used to grade Onshape elements according to a number of criteria.',
     license='MIT',
     packages=[
@@ -36,11 +36,12 @@ setup(
         'pathlib',
         'pint',
         'jsonpickle',
-        'onshape-client',
+        'onshape-client==0.0.10',
         'django',
         'jinja2',
         'ruamel.yaml',
-        'uncertainties'
+        'uncertainties',
+        'importlib_resources'
     ],
     entry_points={
         'xblock.v1': [

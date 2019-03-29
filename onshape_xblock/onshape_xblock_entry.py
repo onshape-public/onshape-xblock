@@ -22,7 +22,9 @@ from check_context import CheckContext
 import logging
 import traceback
 from onshape_client_MOVE import Client
-from .onshape_url import OnshapeElement
+from onshape_url import OnshapeElement
+import importlib
+from serialize import Serialize
 
 loader = ResourceLoader(__name__)  # pylint: disable=invalid-name
 
@@ -123,13 +125,31 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         The studio view presented to the creator of the Onshape XBlock. This includes dynamic xblock type selection.
 
         """
+        # js_context = dict(
+        #     check_list_form=self.runtime.local_resource_url(self, 'public/json/check_list_form.json')
+        # )
+        # js = loader.render_django_template("static/js/dist/studio_view.js", js_context)
 
-        return super(OnshapeXBlock, self).studio_view(context)
+        html_context = dict(
+            check_list_form=self.runtime.local_resource_url(self, 'public/json/check_list_form.json')
+        )
+        html = loader.render_django_template('templates/html/editor_view.html', html_context)
 
-    def get_check_fields(self):
-        fields = {
-            "check_volume": [{"title": "min volume", "help": "The min volume of the model, such as '3 meter**3'"}]
-        }
+        frag = super(OnshapeXBlock, self).studio_view(context)
+
+        frag.add_content(html)
+
+        # frag.add_javascript(self.resource_string("static/js/vendor/react-15-4-2.js"))
+        # frag.add_javascript(self.resource_string("static/js/vendor/reactdom-15-4-2.js"))
+        # frag.add_javascript(self.resource_string("static/js/vendor/babel-6-21-1.js"))
+        # frag.add_javascript(self.resource_string("static/js/vendor/react-jsonschema-form.js"))
+        # frag.add_javascript(self.resource_string("static/js/src/studio_view_getter.js"))
+
+        frag.add_javascript(self.resource_string("static/js/dist/studio_view.js"))
+
+        # frag.add_javascript(js)
+
+        return frag
 
 
     def student_view(self, context=None):
@@ -139,7 +159,6 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         """
         # client_creds = {'secret_key': self.api_secret_key, 'access_key':self.api_secret_key, 'base_url':"https://cad.onshape.com"}
         # client=Client()
-
         context = dict(
             help_text=self.help_text,
             prompt=self.prompt,
@@ -157,7 +176,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
 
         frag = Fragment(html)
         frag.add_css(css)
-        frag.add_javascript(self.resource_string("static/js/src/onshape_xblock.js"))
+        frag.add_javascript(self.resource_string("static/js/dist/studio_view.js"))
         init_args = self.assemble_ui_dictionary()
         frag.initialize_js('OnshapeBlock', json_args=init_args)
         return frag

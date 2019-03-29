@@ -1,11 +1,15 @@
 from onshape_xblock.checks.check_standard_imports import *
 from onshape_xblock.utility import quantify, u
+from xblock.fields import Boolean, Float, Integer, Scope, String, Dict, List
 
 
 class CheckMass(CheckBase):
     """A Mass Check
 
     This mass check checks whether or not the specified Onshape part has a volume in between the min and max specified. """
+
+    # The static definition of the min mass is used to present this check within the form definition
+
 
     failure_message_template = "Your part's mass of {mass} is incorrect. It should be between {{min_mass}} and {{max_mass}}. {{points}}/{{max_points}}"
 
