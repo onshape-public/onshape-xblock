@@ -1,4 +1,4 @@
-from onshape_xblock.checks.check_standard_imports import *
+from onshape_xblock.checks.imports import *
 from onshape_xblock.utility import quantify, u
 
 
@@ -7,6 +7,7 @@ class CheckVolume(CheckBase):
 
     This volume checks whether or not the specified Onshape part has a volume in between the min and max specified. """
 
+    check_type = "check_volume"
     failure_message_template = "Your part's volume of {volume} is incorrect. It should be between {min_volume} and {max_volume}. {points}/{max_points}"
     success_message_template = "Your part's volume of {volume} is correct! You've been awarded {points}/{max_points}!"
 

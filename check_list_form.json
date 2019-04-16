@@ -1,0 +1,135 @@
+{
+  "definitions": {
+    "check_base": {
+      "definitions": {
+        "check_configuration": {
+          "type": "object",
+          "properties": {
+            "max_points": {
+              "default": 1,
+              "type": "number",
+              "title": "Maximum Points"
+            },
+            "name": {
+              "default": "A Check",
+              "type": "string",
+              "title": "Name of the Check"
+            }
+          }
+        },
+        "check_volume": {
+          "type": "object",
+          "properties": {
+            "part_number": "number",
+            "max_volume": "string"
+          }
+        },
+        "check_center_of_mass": {
+          "type": "object",
+          "properties": {
+            "max_points": {
+              "default": 1,
+              "type": "number",
+              "title": "Maximum Points"
+            },
+            "name": {
+              "default": "A Check",
+              "type": "string",
+              "title": "Name of the Check"
+            }
+          }
+        },
+        "check_mass": {
+          "type": "object",
+          "properties": {
+            "max_points": {
+              "default": 1,
+              "type": "number",
+              "title": "Maximum Points"
+            },
+            "name": {
+              "default": "A Check",
+              "type": "string",
+              "title": "Name of the Check"
+            }
+          }
+        }
+      },
+      "dependencies": {
+        "check_type": {
+          "oneOf": [
+            {
+              "properties": {
+                "check_mass_arg": {
+                  "type": "number"
+                },
+                "check_type": {
+                  "enum": [
+                    "check_mass"
+                  ]
+                }
+              }
+            },
+            {
+              "properties": {
+                "additional_args": {
+                  "$ref": "#/definitions/check_base/definitions/check_volume"
+                },
+                "check_type": {
+                  "enum": [
+                    "check_volume"
+                  ]
+                }
+              }
+            },
+            {
+              "properties": {
+                "additional_args": {
+                  "$ref": "#/definitions/check_base/definitions/check_center_of_mass"
+                },
+                "check_type": {
+                  "enum": [
+                    "check_center_of_mass"
+                  ]
+                }
+              }
+            },
+            {
+              "properties": {
+                "additional_args": {
+                  "$ref": "#/definitions/check_base/definitions/check_configuration"
+                },
+                "check_type": {
+                  "enum": [
+                    "check_configuration"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "type": "object",
+      "properties": {
+        "check_type": {
+          "default": "check_volume",
+          "enum": [
+            "check_volume",
+            "check_mass",
+            "check_centroid"
+          ],
+          "type": "string"
+        }
+      }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "this_array": {
+      "items": {
+        "$ref": "#/definitions/check_base"
+      },
+      "type": "array"
+    }
+  }
+}

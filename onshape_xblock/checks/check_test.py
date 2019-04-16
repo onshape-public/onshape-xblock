@@ -4,6 +4,8 @@ from onshape_xblock.checks.check_base import CheckBase
 
 class CheckTest(CheckBase):
 
+    check_type = "check_test"
+
     failure_message_template = ""
 
     def __init__(self, test_param="optional"):

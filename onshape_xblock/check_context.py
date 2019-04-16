@@ -1,6 +1,6 @@
-from onshape_client_MOVE import Client
+from onshape_client.client import Client
 from serialize import Serialize
-from onshape_url import OnshapeElement
+from onshape_client.onshape_url import OnshapeElement
 
 
 class CheckContext(object):

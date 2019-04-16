@@ -21,8 +21,8 @@ import pint
 from check_context import CheckContext
 import logging
 import traceback
-from onshape_client_MOVE import Client
-from onshape_url import OnshapeElement
+from onshape_client.client import Client
+from onshape_client.onshape_url import OnshapeElement
 import importlib
 from serialize import Serialize
 
@@ -113,6 +113,8 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
 
     has_score = True
     icon_class = "problem"
+
+    Client(open_authorize_grant_callback=)
 
 
     def resource_string(self, path):

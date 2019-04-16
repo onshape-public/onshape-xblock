@@ -1,5 +1,5 @@
 import pytest
-from onshape_xblock.onshape_url import OnshapeElement
+from onshape_client.onshape_url import OnshapeElement
 from onshape_xblock.check_context import CheckContext
 
 @pytest.fixture

@@ -45,7 +45,7 @@
                   ]
                 },
                 "additional_args": {
-                  "$ref": "#/definitions/check_object/definitions/check_volume"
+                  "$ref": "#/definitions/check_base/definitions/check_volume"
                 }
               }
             }

@@ -1,4 +1,4 @@
-from onshape_xblock.checks.check_standard_imports import *
+from onshape_xblock.checks.imports import *
 from onshape_xblock.utility import quantify, u
 
 
@@ -7,6 +7,7 @@ class CheckCenterOfMass(CheckBase):
 
     This center of mass check determines if the specified part has a center of mass within a tolerance of a certain location in space."""
 
+    check_type = "check_center_of_mass"
     failure_message_template = "Your part's center of mass, {{guess_centroid}} is incorrect. It should be within {{target_centroid}} with a tolerance of +/-{{tolerance}}. {{points}}/{{max_points}}"
     success_message_template = "Your center of mass is correct. {{points}}/{{max_points}}!"
 

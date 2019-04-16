@@ -1,8 +1,6 @@
 from abc import abstractmethod, ABCMeta, abstractproperty
-from ..serialize import Serialize
-from ..onshape_client_MOVE import Client
-import importlib
-from ..onshape_url import OnshapeElement
+from onshape_client.client import Client
+from onshape_client.onshape_url import OnshapeElement
 from jinja2 import Template
 from ..utility import res_to_dict
 
@@ -20,10 +18,31 @@ class CheckBase(object):
 
     Check feedback is generated from a 'message_template' field that gets customized with the fields of
      the check itself within the rendering context, allowing for complex display logic in the feedback
-     html. """
+     html if desired. Alternatively, check feedback can be turned off."""
     __metaclass__ = ABCMeta
 
-    def __init__(self, name="The checker name", max_points=1, client=None,
+    check_type = "check_base"
+
+    # How the check form will be displayed. You can see what this will look like by visiting
+    # https://mozilla-services.github.io/react-jsonschema-form/ and putting it into the JSONSchema field. Note that
+    # this needs to be implemented as a static field on the class itself.
+    form_definition = \
+        {"type": "object",
+         "properties": {
+             "max_points": {
+                 "type": "number",
+                 "title": "Maximum Points",
+                 "default": 1
+             },
+             "name": {
+                 "type": "string",
+                 "title": "Name of the Check",
+                 "default": "A Check"
+             },
+         }
+         }
+
+    def __init__(self, name="The checker name", max_points=1,
                  onshape_element=None):
         """Initialize the definition of the check"""
         self.max_points = max_points
@@ -31,7 +50,7 @@ class CheckBase(object):
         self.points = 0
         self.name = name
         # Start client on the fly if need be.
-        self.client = client if client else Client()
+        self.client = Client.get_client()
 
         # A key value map for template substitutions
         self.template_context = {"a_test_variable_name": "a test variable value"}
@@ -43,7 +62,7 @@ class CheckBase(object):
         self.failure_message = ""
 
         # Whether or not the check passed
-        self.passed=False
+        self.passed = False
 
     @abstractmethod
     def execute_check(self):
@@ -65,7 +84,8 @@ class CheckBase(object):
             self.points = self.max_points
         else:
             self.format_failure_message()
-        return {"message": self.failure_message, "passed": self.passed, "max_points": self.max_points, "points": self.points}
+        return {"message": self.failure_message, "passed": self.passed, "max_points": self.max_points,
+                "points": self.points}
 
     @abstractproperty
     def failure_message_template(self):
@@ -83,18 +103,23 @@ class CheckBase(object):
         return parts
 
     def get_mass_properties(self, part_id):
-        mass_props = self.client.part_studios_api.get_mass_properties(self.onshape_element.did, self.onshape_element.wvm,
-                                                               self.onshape_element.wvmid, self.onshape_element.eid,
-                                                               part_id=[part_id])
+        mass_props = self.client.part_studios_api.get_mass_properties(self.onshape_element.did,
+                                                                      self.onshape_element.wvm,
+                                                                      self.onshape_element.wvmid,
+                                                                      self.onshape_element.eid,
+                                                                      part_id=[part_id])
         return mass_props
 
     def get_features(self):
-        res = self.client.part_studios_api.get_features(self.onshape_element.did, self.onshape_element.wvm, self.onshape_element.wvmid,
+        res = self.client.part_studios_api.get_features(self.onshape_element.did, self.onshape_element.wvm,
+                                                        self.onshape_element.wvmid,
                                                         self.onshape_element.eid)
         return res_to_dict(res)
 
     def get_configuration(self):
-        res = self.client.part_studios_api.get_configuration4(self.onshape_element.did, self.onshape_element.wvm, self.onshape_element.wvmid, self.onshape_element.eid, _preload_content=False)
+        res = self.client.part_studios_api.get_configuration4(self.onshape_element.did, self.onshape_element.wvm,
+                                                              self.onshape_element.wvmid, self.onshape_element.eid,
+                                                              _preload_content=False)
 
         return res_to_dict(res)
 
@@ -102,4 +127,3 @@ class CheckBase(object):
         self.failure_message = Template(self.failure_message_template).render(self.__dict__)
 
 #   ----------------------------PRIVATE FUNCTIONS -------------------------------------
-

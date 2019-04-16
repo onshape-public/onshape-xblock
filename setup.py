@@ -36,7 +36,7 @@ setup(
         'pathlib',
         'pint',
         'jsonpickle',
-        'onshape-client==0.0.10',
+        'onshape-client',
         'django',
         'jinja2',
         'ruamel.yaml',
