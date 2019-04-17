@@ -3,9 +3,9 @@ import * as React from "react";
 import * as ReactDOM from "react-dom";
 import Form from "react-jsonschema-form";
 
-var $checkList;
-var formListItemHtml;
-var $form;
+let $checkList : any;
+let formListItemHtml;
+let $form : any;
 
 $(function ($) {
 
@@ -48,8 +48,8 @@ function _setDom() {
     loadForm(schema);
 }
 
-function loadForm(schema) {
-    var log = function log(type) {
+function loadForm(schema: any) {
+    var log = function log(type: any) {
         return console.log.bind(console, type);
     };
 
@@ -61,6 +61,6 @@ function loadForm(schema) {
     }), $form[0]);
 }
 
-function onFormChange(data) {
+function onFormChange(data: any) {
     $checkList.text(JSON.stringify(data.formData.this_array));
 }

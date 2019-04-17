@@ -111,10 +111,20 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     response_list = List(scope=Scope.user_state, default=[])
     error = String(scope=Scope.user_state, default="")
 
+    # OAuth initialization vars
+    access_token = String(scope=Scope.user_state, default="")
+    refresh_token = String(scope=Scope.user_state, default="")
+    client_id = String(scope=Scope.user_state, default="")
+    client_secret = String(scope=Scope.user_state, default="")
+    redirect_url = String(scope=Scope.user_state, default="")
+
+    # OAuth status vars
+    need_to_authenticate = String(scope=Scope.user_state, default="")
+    oauth_authorization_url = String(scope=Scope.user_state, default="")
+    oauth_authorization_is_done = String(scope=Scope.user_state, default="")
+
     has_score = True
     icon_class = "problem"
-
-    Client(open_authorize_grant_callback=)
 
 
     def resource_string(self, path):
@@ -127,10 +137,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         The studio view presented to the creator of the Onshape XBlock. This includes dynamic xblock type selection.
 
         """
-        # js_context = dict(
-        #     check_list_form=self.runtime.local_resource_url(self, 'public/json/check_list_form.json')
-        # )
-        # js = loader.render_django_template("static/js/dist/studio_view.js", js_context)
+
 
         html_context = dict(
             check_list_form=self.runtime.local_resource_url(self, 'public/json/check_list_form.json')
@@ -141,15 +148,9 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
 
         frag.add_content(html)
 
-        # frag.add_javascript(self.resource_string("static/js/vendor/react-15-4-2.js"))
-        # frag.add_javascript(self.resource_string("static/js/vendor/reactdom-15-4-2.js"))
-        # frag.add_javascript(self.resource_string("static/js/vendor/babel-6-21-1.js"))
-        # frag.add_javascript(self.resource_string("static/js/vendor/react-jsonschema-form.js"))
-        # frag.add_javascript(self.resource_string("static/js/src/studio_view_getter.js"))
-
         frag.add_javascript(self.resource_string("static/js/dist/studio_view.js"))
 
-        # frag.add_javascript(js)
+        frag.initialize_js("")
 
         return frag
 
@@ -159,8 +160,6 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         The primary view of the Onshape_xblock, shown to students
         when viewing courses.
         """
-        # client_creds = {'secret_key': self.api_secret_key, 'access_key':self.api_secret_key, 'base_url':"https://cad.onshape.com"}
-        # client=Client()
         context = dict(
             help_text=self.help_text,
             prompt=self.prompt,
@@ -178,9 +177,10 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
 
         frag = Fragment(html)
         frag.add_css(css)
-        frag.add_javascript(self.resource_string("static/js/dist/studio_view.js"))
+        js_str = str(self.resource_string("static/js/dist/student_view.js"))
+        frag.add_javascript(js_str)
         init_args = self.assemble_ui_dictionary()
-        frag.initialize_js('OnshapeBlock', json_args=init_args)
+        frag.initialize_js('entry_point', json_args=init_args)
         return frag
 
     def total_max_points(self):
@@ -227,6 +227,23 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
             body = json.loads(e.body)
             self.error = body["message"]
 
+    def set_need_to_authorize(self, url, done):
+        self.need_to_authenticate = True
+        self.oauth_authorization_url = url
+        self.oauth_authorization_is_done = done
+
+
+    def get_oauth_authorize_message(self):
+        oauth_callback_params = dict(
+            url=self.oauth_authorization_url,
+            error="OAUTH_NOT_INITIALIZED"
+        )
+        return oauth_callback_params
+
+    @XBlock.json_handler
+    def finish_oauth_authorization(self, request_data, suffix=''):
+        """Return the authorization redirected-to url that includes the authorization code."""
+        self.oauth_authorization_is_done(request_data["authorization_code_url"])
 
     @XBlock.json_handler
     def check_answers(self, request_data, suffix=''):  # pylint: disable=unused-argument
@@ -248,6 +265,9 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         # Checking the current answer
         else:
             self.perform_checks()
+        if self.need_to_authenticate:
+            # Authentication failed, need to follow OAuth flow
+            return self.get_oauth_authorize_message()
 
         return self.assemble_ui_dictionary()
 

@@ -281,6 +281,7 @@
     "tslib": "^1.9.3",
     "tty-browserify": "^0.0.0",
     "typedarray": "^0.0.6",
+    "typescript-logging": "^0.6.3",
     "union-value": "^1.0.0",
     "unique-filename": "^1.1.1",
     "unique-slug": "^2.0.1",
@@ -322,7 +323,8 @@
     "webpack-cli": "^3.3.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack"
   },
   "repository": {
     "type": "git",
