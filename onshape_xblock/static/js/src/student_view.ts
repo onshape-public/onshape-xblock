@@ -1,11 +1,11 @@
 import {Category,CategoryLogger,CategoryServiceFactory,CategoryConfiguration,LogLevel} from "typescript-logging";
-import * as $ from "jquery";
+// Importing the jquery that has the hooks already defined
+const $: any = (<any> window).$;
 
 CategoryServiceFactory.setDefaultConfiguration(new CategoryConfiguration(LogLevel.Info));
 export const catService = new Category("service");
 
 function MyXBlockAside(runtime: any, element: any, block_element: any, init_args: object) {
-    let yo="hi";
     return new OnshapeBlock(runtime, element, init_args);
 }
 
@@ -14,11 +14,11 @@ function entry_point(runtime: any, element: any, init_args: object) {
     return new OnshapeBlock(runtime, element, init_args);
 }
 
-$(function ($) {
-    console.log("I am in the ready function!");
+$(function ($: any) {
+    catService.info("At the ready point");
 });
 
-class OnshapeBlock {
+export class OnshapeBlock {
 
     private static waitingButtonHtml = "<span class=\"spinner-border spinner-border-sm\" role=\"status\" aria-hidden=\"true\"></span>\n" +
             "  <span class=\"sr-only\">Loading...</span>";
@@ -33,7 +33,7 @@ class OnshapeBlock {
     protected response_list: Array<any>;
     protected submitted: boolean;
     protected submitted_url: String;
-    protected final_submission: boolean;
+    protected is_final_submission: boolean;
 
     protected $status_message: any;
     protected $check_button: JQuery<HTMLElement>;
@@ -57,7 +57,7 @@ class OnshapeBlock {
         this.response_list = [];
         this.submitted = init_args.submitted;
         this.submitted_url = init_args.submitted_url;
-        this.final_submission = false;
+        this.is_final_submission = false;
 
         // A message indicating that some have failed.
         this.$status_message = $('#status_message', element);
@@ -78,14 +78,15 @@ class OnshapeBlock {
         //HANDLERS - below are the handler calls for various actions.
 
         // CHECK THE ONSHAPE ELEMENT
-        this.$check_button.click(this.checkAnswer);
+        this.$check_button.click(() => this.checkAnswer());
+
         // FINAL SUBMISSION
         this.$final_submit_button.click(() => {
-            this.final_submission=true;
+            this.is_final_submission=true;
             this.checkAnswer();
         });
         // GET HELP WITH THIS XBLOCK
-        $('#activetable-help-button', element).click(this.toggleHelp);
+        $('#activetable-help-button', element).click(() => this.toggleHelp);
     }
 
     public static create_block(runtime: any, element: any, init_args: object) {
@@ -167,7 +168,7 @@ class OnshapeBlock {
         catService.info("Checking the answer");
         this.makeButtonsWait();
         let url = this.$onshape_url.val();
-        this.callHandler({url : this.handlerUrl("check_answers"), data:{url: url, final_submission: this.final_submission}, onSuccess: this.updateFeedback});
+        this.callHandler({url : this.handlerUrl("check_answers"), data:{url: url, is_final_submission: this.is_final_submission}, onSuccess: (data: any, status: any, error: any) => this.updateFeedback(data, status, error)});
     }
 
     toggleHelp() {
@@ -181,12 +182,16 @@ class OnshapeBlock {
     //data is passed in as the response from the call to check_answers
     updateFeedback(data: any, status: any, error: any) {
         this.bringButtonsBack();
-        // Catch errors from the server
+        // Catch errors from contacting the server
         if (status==="error"){
             this.$status_message.text(error);
             this.$status_message.color("red");
         }
+        // Catch evaluation errors
         else if (data.error !== ""){
+            if (data.error === "OAuthNotAuthenticated") {
+                this.openOauthPopup(data.oauthUrl)
+            }
             this.$status_message.text(data.error)
         }
         else{
@@ -194,11 +199,6 @@ class OnshapeBlock {
             this.updateResponseMessages();
             this.UpdateScore();
         }
-    }
-
-    // Used to authorize the application
-    openGrantAuthorizationPopup(url: string) {
-        window.open(url, 'Authorize Onshape XBlock To Access Your Documents', 'window settings');
     }
 
     updateFlags(data: any){
@@ -209,7 +209,11 @@ class OnshapeBlock {
         this.submitted_url = data.submitted_url;
     }
 
-    // ----------------------- UTILITY FUNCTIONS BELOW --------------------------
+    openOauthPopup(url: string){
+        let windowName = "Oauth";
+        window.open(url,windowName,'height=500,width=500');
+    }
+
 
     // Call the python check_answers function when the user clicks
     handlerUrl(handlerName: string) {

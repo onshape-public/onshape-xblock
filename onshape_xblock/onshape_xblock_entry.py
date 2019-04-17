@@ -132,12 +132,32 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         data = pkg_resources.resource_string(__name__, path)
         return data.decode("utf8")
 
+    def start_client(self):
+        """Start the client if the client isn't already started."""
+        try:
+            Client.get_client()
+        except Exception as e:
+            Client(open_authorize_grant_callback=self.set_need_to_authorize)
+
+    def oauth_login_view(self, context):
+        html = loader.render_django_template('templates/html/oauth_login_view.html', {})
+        css = loader.render_template('templates/css/onshape_xblock.css', {})
+        frag = Fragment(html)
+        frag.add_css(css)
+        js_str = str(self.resource_string("static/js/dist/oauth_login_view.js"))
+        frag.add_javascript(js_str)
+        frag.initialize_js('makeOauthBlock')
+        return frag
+
+    def studio_view2(self, context):
+        return self.studio_view(context)
+
     def studio_view(self, context):
         """
         The studio view presented to the creator of the Onshape XBlock. This includes dynamic xblock type selection.
 
         """
-
+        self.start_client()
 
         html_context = dict(
             check_list_form=self.runtime.local_resource_url(self, 'public/json/check_list_form.json')
@@ -160,6 +180,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         The primary view of the Onshape_xblock, shown to students
         when viewing courses.
         """
+        self.start_client()
         context = dict(
             help_text=self.help_text,
             prompt=self.prompt,
@@ -227,6 +248,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
             body = json.loads(e.body)
             self.error = body["message"]
 
+    # The callback for the OAuth client
     def set_need_to_authorize(self, url, done):
         self.need_to_authenticate = True
         self.oauth_authorization_url = url
@@ -258,7 +280,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         if url:
             self.submitted_url = url
         # Either intentionally submitting current answer OR forced into submitting current
-        if request_data["final_submission"] or self.attempts >= self.max_attempts:
+        if request_data["is_final_submission"] or self.attempts >= self.max_attempts:
             if not self.is_checked():
                 self.perform_checks()
             self.submit_final_grade()
@@ -291,8 +313,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         self.lock_submitted_url_with_microversion()
 
     def lock_submitted_url_with_microversion(self, client=None):
-        client = client if client else Client()
-        self.submitted_url = OnshapeElement(self.submitted_url).get_microversion_url(client=client)
+        self.submitted_url = OnshapeElement(self.submitted_url).get_microversion_url()
 
     @staticmethod
     def workbench_scenarios():

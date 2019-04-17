@@ -12,4 +12,4 @@ This XBlock uses pipenv to manage python packages and npm to manage the frontend
 ### Debugging In PyCharm
 To debug in pycharm, you should have the xblock sdk set up and running locally. Then, just add a run configuration that points to `<xblock_development_repo>/xblock-sdk` and passes the parameter `runserver`
 ### Building the Frontend
-To build the js from the ts that defines the frontend, simply run `npm run build`
+To build the js from the ts that defines the frontend, simply run `npm run build`. This will put the output js into the dist folder and continue to watch the ts for additional changes, rebuilding as necessary. Very often, when you run into issues, they are related to the fact that the runtime expects the implemented js functionality to use the window object for all object names. Therefore, very often within typescript you need to set or get some object from the window object like so: `(<any>window).MyVeryImportantObject`. This should only be necessary when interacting with the js runtime.

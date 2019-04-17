@@ -50,7 +50,8 @@ module.exports = {
 
     entry: {
         student_view: './onshape_xblock/static/js/src/student_view.ts',
-        studio_view: './onshape_xblock/static/js/src/studio_view.ts'
+        studio_view: './onshape_xblock/static/js/src/studio_view.ts',
+        oauth_login_view: './onshape_xblock/static/js/src/oauth_login_view.ts'
     },
 
     output: {
@@ -81,4 +82,19 @@ module.exports = {
     },
 
     devtool: 'inline-source-map',
+    watch: true
+
+    // plugins: [
+    //     new webpack.SourceMapDevToolPlugin({
+    //           append: '\n//# sourceMappingURL=http://localhost:9000/[url]',
+    //             filename: '[name].map'
+    //     })
+    //   ],
+    // devServer: {
+    //     contentBase: './onshape_xblock/static/js/dist',
+    //     compress: true,
+    //     port: 9000
+    //   }
 };
+
+
