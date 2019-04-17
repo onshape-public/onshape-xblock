@@ -7,7 +7,6 @@ verify_ssl = true
 pytest = "*"
 twine = "*"
 onshape-xblock = {path = ".",editable = true}
-onshape-client = "*"
 
 [packages]
 ruamel-yaml = "*"

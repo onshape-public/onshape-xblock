@@ -1,6 +1,9 @@
 import pytest
 from onshape_client.onshape_url import OnshapeElement
 from onshape_xblock.check_context import CheckContext
+from onshape_client.client import Client
+
+client=Client()
 
 @pytest.fixture
 def configured_cube_version():

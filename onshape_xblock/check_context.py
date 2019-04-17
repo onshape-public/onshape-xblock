@@ -4,9 +4,8 @@ from onshape_client.onshape_url import OnshapeElement
 
 
 class CheckContext(object):
-    def __init__(self, check_init_list=None, client=None, onshape_element=None):
+    def __init__(self, check_init_list=None, onshape_element=None):
         self.check_init_list = check_init_list
-        self.client = client if client else Client()
         self.checks = []
         if onshape_element:
             self.onshape_element = onshape_element if isinstance(onshape_element, OnshapeElement) else OnshapeElement(onshape_element)
@@ -48,7 +47,6 @@ class CheckContext(object):
         """
         # Inject fields that we want in all clients into the mix.
         check = Serialize.init_class_based_on_type(package_name="onshape_xblock.checks",
-                                                   client=self.client,
                                                    onshape_element=self.onshape_element,
                                                    **check_init_args)
         return check

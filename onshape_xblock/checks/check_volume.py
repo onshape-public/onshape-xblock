@@ -26,21 +26,21 @@ class CheckVolume(CheckBase):
     }
 
 
-def __init__(self,
-             min_volume=0 * u.m ** 3,
-             max_volume=1 * u.m ** 3,
-             part_number=0,
-             **kwargs):
-    super(CheckVolume, self).__init__(name="Check Volume",
-                                      **kwargs)
-    self.min_volume = quantify(min_volume, default_units=u.m ** 3)
-    self.max_volume = quantify(max_volume, default_units=u.m ** 3)
-    self.part_number = part_number
-    self.volume = None
+    def __init__(self,
+                 min_volume=0 * u.m ** 3,
+                 max_volume=1 * u.m ** 3,
+                 part_number=0,
+                 **kwargs):
+        super(CheckVolume, self).__init__(name="Check Volume",
+                                          **kwargs)
+        self.min_volume = quantify(min_volume, default_units=u.m ** 3)
+        self.max_volume = quantify(max_volume, default_units=u.m ** 3)
+        self.part_number = part_number
+        self.volume = None
 
 
-def execute_check(self):
-    part_id = self.get_part_id(self.part_number)
-    mass_properties = self.get_mass_properties(part_id)
-    self.volume = quantify(mass_properties.bodies["-all-"].volume[0], default_units=u.m ** 3)
-    self.passed = (self.min_volume < self.volume < self.max_volume)
+    def execute_check(self):
+        part_id = self.get_part_id(self.part_number)
+        mass_properties = self.get_mass_properties(part_id)
+        self.volume = quantify(mass_properties.bodies["-all-"].volume[0], default_units=u.m ** 3)
+        self.passed = (self.min_volume < self.volume < self.max_volume)

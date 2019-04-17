@@ -35,9 +35,3 @@ def test_parse_url():
     assert onshape_url.get_microversion_url() == "https://cad.onshape.com/documents/cca81d10f239db0db9481e6f/v/39711aea80fd4100faa1b147/m/4b471df5f9c9590b2a2496cf/e/69c9eedda86512966b20bc90"
     onshape_element_long_form = OnshapeElement("https://cad.onshape.com/documents/cca81d10f239db0db9481e6f/w/80887f5994121967bf4d59a6/m/aa1867247974aa51baf6da3d/e/69c9eedda86512966b20bc90")
     assert onshape_element_long_form.optional_microversion == "aa1867247974aa51baf6da3d"
-
-
-def test_merge_d():
-    filler = {"key1": "fill1"}
-    template = {"key1": "template1"}
-    assert merge_d(filler, template) == {"key1": "fill1"}
