@@ -23,6 +23,7 @@ import logging
 import traceback
 from onshape_client.client import Client
 from onshape_client.onshape_url import OnshapeElement
+from onshape_client.rest import ApiException
 import importlib
 from serialize import Serialize
 
@@ -119,7 +120,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     redirect_url = String(scope=Scope.user_state, default="")
 
     # OAuth status vars
-    need_to_authenticate = String(scope=Scope.user_state, default="")
+    need_to_authenticate = Boolean(scope=Scope.user_state, default=False)
     oauth_authorization_url = String(scope=Scope.user_state, default="")
     oauth_authorization_is_done = String(scope=Scope.user_state, default="")
 
@@ -137,7 +138,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         try:
             Client.get_client()
         except Exception as e:
-            Client(open_authorize_grant_callback=self.set_need_to_authorize)
+            Client()
 
     def oauth_login_view(self, context):
         html = loader.render_django_template('templates/html/oauth_login_view.html', {})
@@ -227,6 +228,8 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
             response_list=self.response_list,
             error=self.error
         )
+        if self.need_to_authenticate:
+            ui_args["oauthUrl"] = self.oauth_authorization_url
         return ui_args
 
     def is_checked(self):
@@ -244,15 +247,17 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
             self.error = str(err)
 
         except Exception as e:
-            logging.error(traceback.format_exc())
-            body = json.loads(e.body)
-            self.error = body["message"]
+            if self.need_to_authenticate:
+                self.error = "OAuthNotAuthenticated"
+            else:
+                logging.error(traceback.format_exc())
+                body = json.loads(e.body)
+                self.error = body["message"]
 
     # The callback for the OAuth client
-    def set_need_to_authorize(self, url, done):
+    def set_need_to_authorize(self, url):
         self.need_to_authenticate = True
-        self.oauth_authorization_url = url
-        self.oauth_authorization_is_done = done
+        self.oauth_authorization_url, state = url
 
 
     def get_oauth_authorize_message(self):
@@ -265,7 +270,10 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     @XBlock.json_handler
     def finish_oauth_authorization(self, request_data, suffix=''):
         """Return the authorization redirected-to url that includes the authorization code."""
-        self.oauth_authorization_is_done(request_data["authorization_code_url"])
+        # Pretend we have https so that the oauth library doesn't complain for using the XBlock SDK.
+        url = request_data["authorization_code_url"]
+        url = url.replace("http", "https")
+        Client.get_client()._fetch_access_token(url)
 
     @XBlock.json_handler
     def check_answers(self, request_data, suffix=''):  # pylint: disable=unused-argument
@@ -287,10 +295,6 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         # Checking the current answer
         else:
             self.perform_checks()
-        if self.need_to_authenticate:
-            # Authentication failed, need to follow OAuth flow
-            return self.get_oauth_authorize_message()
-
         return self.assemble_ui_dictionary()
 
     def perform_checks(self):
@@ -301,10 +305,15 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
             self.response_list = check_context.perform_all_checks()
             self.score = self.calculate_points()
             self.attempts += 1
+        # Need to authenticate with OAuth
+        except NotImplementedError as e:
+            client = Client.get_client()
+            self.set_need_to_authorize(client.oauth.authorization_url(client.authorization_uri))
+            self.set_errors(e)
         except Exception as e:
             self.set_errors(e)
 
-    def submit_final_grade(self, client=None):
+    def submit_final_grade(self):
         """Submit the grade to official xblock course."""
         self.runtime.publish(self, "grade",
                              {"value": self.score,
@@ -312,7 +321,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         self.submitted_grade = True
         self.lock_submitted_url_with_microversion()
 
-    def lock_submitted_url_with_microversion(self, client=None):
+    def lock_submitted_url_with_microversion(self):
         self.submitted_url = OnshapeElement(self.submitted_url).get_microversion_url()
 
     @staticmethod
