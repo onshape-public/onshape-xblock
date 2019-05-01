@@ -2,7 +2,7 @@ from abc import abstractmethod, ABCMeta, abstractproperty
 from onshape_client.client import Client
 from onshape_client.onshape_url import OnshapeElement
 from jinja2 import Template
-from ..utility import res_to_dict
+from onshape_xblock.utility import res_to_dict
 
 
 class CheckBase(object):

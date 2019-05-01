@@ -1,5 +1,4 @@
-from onshape_xblock.checks.imports import *
-from onshape_xblock.utility import quantify, u
+from onshape_xblock.check_imports import *
 
 
 class CheckVolume(CheckBase):

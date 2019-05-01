@@ -1,5 +1,4 @@
-from onshape_xblock.checks.imports import *
-from onshape_xblock.utility import quantify, u
+from onshape_xblock.check_imports import *
 
 
 class CheckVolume(CheckBase):
@@ -12,18 +11,22 @@ class CheckVolume(CheckBase):
     success_message_template = "Volume check passed!"
 
     form_definition = \
-    {
-        "type": "object",
-        "properties": {
-            "min_volume": {
-                "type": "string",
-                "title": "The minimum volume the part can have",
-                "default": "0 meter**3"
-            },
-            "max_volume": "string",
-            "part_number": "number"
+        {
+            "type": "object",
+            "properties": {
+                "part_number": {
+                    "type": "number"
+                },
+                "min_volume": {
+                    "default": "0 meter**3",
+                    "type": "string",
+                    "title": "The minimum volume the part can have"
+                },
+                "max_volume": {
+                    "type": "string"
+                }
+            }
         }
-    }
 
 
     def __init__(self,

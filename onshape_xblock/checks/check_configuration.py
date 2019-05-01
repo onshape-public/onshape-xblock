@@ -1,5 +1,4 @@
-from onshape_xblock.checks.imports import *
-from onshape_xblock.utility import quantify, u
+from onshape_xblock.check_imports import *
 
 
 class CheckConfiguration(CheckBase):
@@ -7,6 +6,21 @@ class CheckConfiguration(CheckBase):
 
     This configuration check checks whether or not the specified Onshape part has a configuration within the bounds defined. """
 
+    form_definition = {
+          "type": "object",
+          "properties": {
+            "max_points": {
+              "default": 1,
+              "type": "number",
+              "title": "Maximum Points"
+            },
+            "name": {
+              "default": "A Check",
+              "type": "string",
+              "title": "Name of the Check"
+            }
+          }
+        }
     check_type = "check_configuration"
     failure_message_template = "Your PartStudio has a {config_type_actual} in the configuration where it should have a {config_type_expected} configuration type."
     success_message_template = "Your part's volume of {volume} is correct! You've been awarded {points}/{max_points}!"

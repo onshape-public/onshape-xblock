@@ -1,5 +1,4 @@
-
-from onshape_xblock.checks.check_base import CheckBase
+from onshape_xblock.check_imports import *
 
 
 class CheckTest(CheckBase):

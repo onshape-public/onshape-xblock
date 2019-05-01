@@ -270,9 +270,12 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     @XBlock.json_handler
     def finish_oauth_authorization(self, request_data, suffix=''):
         """Return the authorization redirected-to url that includes the authorization code."""
-        # Pretend we have https so that the oauth library doesn't complain for using the XBlock SDK.
         url = request_data["authorization_code_url"]
-        url = url.replace("http", "https")
+
+        # Pretend we have https so that the oauth library doesn't complain for using the XBlock SDK.
+        if 'https' not in url:
+            url = url.replace("http", "https")
+
         Client.get_client()._fetch_access_token(url)
 
     @XBlock.json_handler
