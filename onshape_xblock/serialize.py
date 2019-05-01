@@ -50,7 +50,10 @@ class Serialize(jsonpickle.handlers.BaseHandler):
         module_name = package_name + "." + type
         class_name = Serialize.to_pascal_case(type)
         module = importlib.import_module(module_name)
-        class_ = getattr(module, class_name)
+        try:
+            class_ = getattr(module, class_name)
+        except AttributeError as e:
+            raise AttributeError("The class name in module {} needs to match {}".format(module_name, class_name))
         if init_class:
             return class_(**class_init_args)
         else:

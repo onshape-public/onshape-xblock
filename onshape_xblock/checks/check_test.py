@@ -3,8 +3,6 @@ from onshape_xblock.check_imports import *
 
 class CheckTest(CheckBase):
 
-    check_type = "check_test"
-
     failure_message_template = ""
 
     def __init__(self, test_param="optional"):

@@ -35,17 +35,7 @@ function _setDom() {
 
     console.log("I'm in the setDOM function");
 
-    const schema = {
-        title: "Todo",
-        type: "object",
-        required: ["title"],
-        properties: {
-            title: {type: "string", title: "Title", default: "A new task"},
-            done: {type: "boolean", title: "Done?", default: false}
-        }
-    };
-
-    loadForm(schema);
+    $.getJSON((<any>window).check_list_form_url,(schema) => loadForm(schema));
 }
 
 function loadForm(schema: any) {

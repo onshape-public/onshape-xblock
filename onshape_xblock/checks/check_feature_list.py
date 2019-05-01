@@ -1,12 +1,11 @@
 from onshape_xblock.check_imports import *
 
 
-class CheckVolume(CheckBase):
+class CheckFeatureList(CheckBase):
     """A volume check
 
     This volume checks whether or not the specified Onshape part has a volume in between the min and max specified. """
 
-    check_type = "check_volume"
     failure_message_template = "Your part's volume of {volume} is incorrect. It should be between {min_volume} and {max_volume}. {points}/{max_points}"
     success_message_template = "Your part's volume of {volume} is correct! You've been awarded {points}/{max_points}!"
 
@@ -15,7 +14,7 @@ class CheckVolume(CheckBase):
                  max=1*u.m,
                  part_number=0,
                  **kwargs):
-        super(CheckVolume, self).__init__(name="Check Volume",
+        super(CheckFeatureList, self).__init__(name="Check Volume",
                                           **kwargs)
         self.min = quantify(min, default_units=u.m**3)
         self.max = quantify(max, default_units=u.m**3)

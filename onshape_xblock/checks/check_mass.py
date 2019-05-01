@@ -22,7 +22,6 @@ class CheckMass(CheckBase):
             }
           }
     }
-    check_type = "check_mass"
     failure_message_template = "Your part's mass of {mass} is incorrect. It should be between {{min_mass}} and {{max_mass}}. {{points}}/{{max_points}}"
 
     def __init__(self,

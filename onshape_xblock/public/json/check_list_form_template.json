@@ -1,73 +1,29 @@
 {
-  "type": "object",
-  "properties": {
-    "this_array":{
-      "type":"array",
-      "items":{
-        "$ref": "#/definitions/check_base"
-      }
-    }
-  },
   "definitions": {
     "check_base": {
+      "definitions": {},
+      "dependencies": {
+        "check_type": {
+          "oneOf": []
+        }
+      },
       "type": "object",
       "properties": {
         "check_type": {
-          "type": "string",
           "default": "check_volume",
-          "enum": [
-            "check_volume",
-            "check_mass",
-            "check_centroid"
-          ]
-        }
-      },
-      "dependencies": {
-        "check_type": {
-          "oneOf": [
-            {
-              "properties": {
-                "check_type": {
-                  "enum": [
-                    "check_mass"
-                  ]
-                },
-                "check_mass_arg": {
-                  "type": "number"
-                }
-              }
-            },
-            {
-              "properties": {
-                "check_type": {
-                  "enum": [
-                    "check_volume"
-                  ]
-                },
-                "additional_args": {
-                  "$ref": "#/definitions/check_base/definitions/check_volume"
-                }
-              }
-            }
-          ]
-        }
-      },
-      "definitions": {
-        "check_volume": {
-          "type": "object",
-          "properties": {
-            "min_volume": {
-              "type": "string"
-            },
-            "max_volume": {
-              "type": "string"
-            }
-          }
-        },
-        "check_mass": {
-          "type": "object"
+          "enum": [],
+          "type": "string"
         }
       }
+    }
+  },
+  "type": "object",
+  "properties": {
+    "this_array": {
+      "items": {
+        "$ref": "#/definitions/check_base"
+      },
+      "type": "array"
     }
   }
 }

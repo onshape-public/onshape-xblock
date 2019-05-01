@@ -2,71 +2,71 @@
 much like how the xblock itself generates the UI."""
 from serialize import Serialize
 import json, codecs, io
-from importlib_resources import read_binary
+from importlib_resources import read_text, path
 from pathlib import Path
 import os
 import checks
 import pkgutil
 import inspect
+from onshape_xblock.public import json as json_dir
 
 
 class GenerateCheckListForm():
 
     def __init__(self):
-        self.form_package = "onshape_xblock.public.json"
         self.form_template_filename = "check_list_form_template.json"
         self.form_output_filename = "check_list_form.json"
         self.form_template = self.get_form_template()
-        self.static_check_classes = self.get_static_check_classes()
-        self.insert_check_definitions()
-        self.insert_check_dependencies()
+        self.set_static_check_classes()
+        self.generate_json_schema()
         self.save_check_form()
 
-    def get_static_check_classes(self):
-
-        # Should this just get all of the modules within the package? Or is this a place we can specify particular values?
+    def set_static_check_classes(self):
         check_name_list = [{"type" : name} for _, name, _ in pkgutil.iter_modules([os.path.dirname(inspect.getfile(checks))])]
         check_class_list = Serialize.init_class_list(check_name_list, init_class=False)
-        return check_class_list
+
+        self.static_check_classes = {class_type["type"]: class_stuff for class_type, class_stuff in zip(check_name_list, check_class_list)}
+
+    def generate_json_schema(self):
+        for check_type, check in self.static_check_classes.items():
+            self.insert_check_dependencies(check_type)
+            self.insert_check_definitions(check_type, check)
+            self.insert_check_options(check_type)
 
     def get_form_template(self):
-        d = read_binary(self.form_package, self.form_template_filename)
+        d = read_text(json_dir, self.form_template_filename)
         return json.loads(d)
 
-    def insert_check_definitions(self):
+    def insert_check_definitions(self, check_type, check):
         """Insert/merge the check form definitions. If the value is present in the template, keep it there."""
-        for check in self.static_check_classes:
-            check_type = check.check_type
-            definitions = self.form_template["definitions"]["check_base"]["definitions"]
-            definitions[check_type] = check.form_definition
+        definitions = self.form_template["definitions"]["check_base"]["definitions"]
+        definitions[check_type] = check.form_definition
 
-    def insert_check_dependencies(self):
-        """Insert the check dependency if it isn't already there."""
-        check_type_to_index = {}
+    def insert_check_dependencies(self, check_type):
+        """Insert the check dependency."""
         oneOf = self.form_template["definitions"]["check_base"]["dependencies"]["check_type"]["oneOf"]
-        for index, property in [c.form_definition for c in self.static_check_classes]:
-            check_type = property["properties"]["check_type"]["enum"][0]
-            check_type_to_index[check_type] = index
-        for check in self.static_check_classes:
-            check_type = check.check_type
-            if check_type not in check_type_to_index:
-                v = {"properties": {
-                        "check_type": {
-                            "enum": [
-                                check_type
-                            ]
-                        },
-                        "additional_args": {
-                            "$ref": "#/definitions/check_base/definitions/" + check_type
-                        }
-                    }}
-                oneOf.append(v)
+        v = {"properties": {
+                "check_type": {
+                    "enum": [
+                        check_type
+                    ]
+                },
+                "additional_args": {
+                    "$ref": "#/definitions/check_base/definitions/" + check_type
+                }
+            }}
+        oneOf.append(v)
+
+    def insert_check_options(self, check_type):
+        """Insert the checks into the enum list"""
+        enum = self.form_template["definitions"]["check_base"]["properties"]["check_type"]["enum"]
+        enum.append(check_type)
 
     def save_check_form(self):
-        outfile_path = Path(os.getcwd()) / self.form_output_filename
 
-        with io.open(str(outfile_path), 'w', encoding='utf-8') as f:
-            f.write(json.dumps(self.form_template, ensure_ascii=False))
+        with path(json_dir, self.form_output_filename) as p:
+            with open(str(p), 'w') as f:
+                f.write(json.dumps(self.form_template, ensure_ascii=False))
 
 
 

@@ -21,7 +21,6 @@ class CheckConfiguration(CheckBase):
             }
           }
         }
-    check_type = "check_configuration"
     failure_message_template = "Your PartStudio has a {config_type_actual} in the configuration where it should have a {config_type_expected} configuration type."
     success_message_template = "Your part's volume of {volume} is correct! You've been awarded {points}/{max_points}!"
 

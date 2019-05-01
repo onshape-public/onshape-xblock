@@ -150,9 +150,6 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         frag.initialize_js('makeOauthBlock')
         return frag
 
-    def studio_view2(self, context):
-        return self.studio_view(context)
-
     def studio_view(self, context):
         """
         The studio view presented to the creator of the Onshape XBlock. This includes dynamic xblock type selection.
@@ -160,15 +157,18 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         """
         self.start_client()
 
-        html_context = dict(
-            check_list_form=self.runtime.local_resource_url(self, 'public/json/check_list_form.json')
-        )
-        html = loader.render_django_template('templates/html/editor_view.html', html_context)
+        html = loader.render_django_template('templates/html/editor_view.html', {})
 
         frag = super(OnshapeXBlock, self).studio_view(context)
 
         frag.add_content(html)
 
+        js_context = dict(
+            check_list_form_url=self.runtime.local_resource_url(self, 'public/json/check_list_form.json')
+        )
+        js = loader.render_django_template("static/js/inject_vars.js", js_context)
+
+        frag.add_javascript(js)
         frag.add_javascript(self.resource_string("static/js/dist/studio_view.js"))
 
         frag.initialize_js("")
