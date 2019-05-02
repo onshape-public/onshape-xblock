@@ -1,2 +1,2 @@
 
-window.check_list_form_url = "{{check_list_form_url}}";
+window.check_list_form = {{check_list_form|safe}};

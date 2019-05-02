@@ -13,7 +13,7 @@ $(function ($) {
 
     //If this is running on the stack, look for the edit button, otherwise if in the sdk, jump straight to the function:
     if ($editButton.length) {
-        $editButton.click(() => setTimeout(() => setDOM(), 8000));
+        setTimeout(() => setDOM(), 8000);
     } else {
         setDOM();
     }
@@ -33,9 +33,9 @@ function _setDom() {
 
     $checkList.attr("readonly", "");
 
-    console.log("I'm in the setDOM function");
+    console.log("The DOM is set accordingly with the react json form.");
 
-    $.getJSON((<any>window).check_list_form_url,(schema) => loadForm(schema));
+    loadForm((<any>window).check_list_form);
 }
 
 function loadForm(schema: any) {

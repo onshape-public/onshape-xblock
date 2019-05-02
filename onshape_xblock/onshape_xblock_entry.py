@@ -164,7 +164,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         frag.add_content(html)
 
         js_context = dict(
-            check_list_form_url=self.runtime.local_resource_url(self, 'public/json/check_list_form.json')
+            check_list_form=self.resource_string('public/json/check_list_form.json')
         )
         js = loader.render_django_template("static/js/inject_vars.js", js_context)
 

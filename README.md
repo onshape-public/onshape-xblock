@@ -14,6 +14,8 @@ pip install <my_xblock>==<the_version> --no-cache-dir
 
 ```
 
+To access the logs, `cat /opt/bitnami/apps/edx/var/log/lms/edx.log`
+
 ## Using the XBlock
 To properly authenticate students who use the xblock, we use OAuth. This is how we're able to get the permissions to check a document on behalf of a student. This authentication procedure happens lazily - the user is only directed through the authentication flow when they submit a request that requires it AND the xblock doesn't currently have the permissions. From the course creator side, they have to do a few setup steps to create the OAuth application in Onshape, and tell it the url at which the xblock will accept validation.
 
