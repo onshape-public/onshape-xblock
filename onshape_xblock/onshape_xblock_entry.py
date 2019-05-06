@@ -157,11 +157,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         """
         self.start_client()
 
-        html = loader.render_django_template('templates/html/editor_view.html', {})
-
         frag = super(OnshapeXBlock, self).studio_view(context)
-
-        frag.add_content(html)
 
         js_context = dict(
             check_list_form=self.resource_string('public/json/check_list_form.json')
