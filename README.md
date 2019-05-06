@@ -11,6 +11,7 @@ For the bitnami stack, go to the application, and enter the following commands:
 sudo /opt/bitnami/use_edx
 source /opt/bitnami/apps/edx/venvs/edxapp/bin/activate
 pip install <my_xblock>==<the_version> --no-cache-dir
+sudo /opt/bitnami/ctlscript.sh restart apache
 
 ```
 
