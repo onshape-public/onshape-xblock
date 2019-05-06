@@ -21,11 +21,12 @@ import pint
 from check_context import CheckContext
 import logging
 import traceback
-from onshape_client.client import Client
+from onshape_client.client import Client, OAuthAuthorizationMethods, OAuthNotAuthorizedException
 from onshape_client.onshape_url import OnshapeElement
 from onshape_client.rest import ApiException
 import importlib
 from serialize import Serialize
+import os
 
 loader = ResourceLoader(__name__)  # pylint: disable=invalid-name
 
@@ -38,19 +39,6 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     """
     An Onshape XBlock that can be configured to validate all aspects of an onshape element.
     """
-
-    api_access_key = String(
-        display_name='API Access Key',
-        help='The access key used to check the documents.',
-        scope=Scope.settings,
-        default='Please paste your access key from https://dev-portal.onshape.com'
-    )
-    api_secret_key = String(
-        display_name='API Secret Key',
-        help='The secret key used to check the documents.',
-        scope=Scope.settings,
-        default='Please paste your secret key from https://dev-portal.onshape.com'
-    )
 
     display_name = String(
         display_name='Display Name',
@@ -74,7 +62,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         scope=Scope.content,
         multiline_editor=True,
         resettable_editor=True,
-        default=[{"type": "check_volume", "max_points": 6}],
+        default=[{"check_type": "check_volume", "max_points": 6}],
     )
     help_text = String(
         display_name='Help text',
@@ -113,32 +101,38 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     error = String(scope=Scope.user_state, default="")
 
     # OAuth initialization vars
-    access_token = String(scope=Scope.user_state, default="")
-    refresh_token = String(scope=Scope.user_state, default="")
-    client_id = String(scope=Scope.user_state, default="")
-    client_secret = String(scope=Scope.user_state, default="")
-    redirect_url = String(scope=Scope.user_state, default="")
+    access_token = String(scope=Scope.preferences, default="")
+    refresh_token = String(scope=Scope.preferences, default="")
+    client_id = String(scope=Scope.content, default="")
+    client_secret = String(scope=Scope.content, default="")
+    redirect_uri = String(scope=Scope.content, default="")
 
     # OAuth status vars
     need_to_authenticate = Boolean(scope=Scope.user_state, default=False)
     oauth_authorization_url = String(scope=Scope.user_state, default="")
-    oauth_authorization_is_done = String(scope=Scope.user_state, default="")
 
     has_score = True
     icon_class = "problem"
-
 
     def resource_string(self, path):
         """Handy helper for getting resources from our kit."""
         data = pkg_resources.resource_string(__name__, path)
         return data.decode("utf8")
 
-    def start_client(self):
+    def get_client(self):
         """Start the client if the client isn't already started."""
         try:
-            Client.get_client()
+            Client.get_client(create_if_needed=False)
         except Exception as e:
-            Client()
+            Client(configuration={"client_id": self.client_id,
+                                  "client_secret": self.client_secret,
+                                  "base_url": "https://cad.onshape.com",
+                                  "token_uri": "https://oauth.onshape.com/oauth/token",
+                                  "authorization_uri": "https://oauth.onshape.com/oauth/authorize",
+                                  "oauth_authorization_method": OAuthAuthorizationMethods.MANUAL_FLOW,
+                                  "scope": ["OAuth2Read"],
+                                  "redirect_uri": self.redirect_uri
+            })
 
     def oauth_login_view(self, context):
         html = loader.render_django_template('templates/html/oauth_login_view.html', {})
@@ -155,7 +149,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         The studio view presented to the creator of the Onshape XBlock. This includes dynamic xblock type selection.
 
         """
-        self.start_client()
+        self.get_client()
 
         frag = super(OnshapeXBlock, self).studio_view(context)
 
@@ -177,7 +171,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         The primary view of the Onshape_xblock, shown to students
         when viewing courses.
         """
-        self.start_client()
+        self.get_client()
         context = dict(
             help_text=self.help_text,
             prompt=self.prompt,
@@ -272,7 +266,9 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         if 'https' not in url:
             url = url.replace("http", "https")
 
-        Client.get_client()._fetch_access_token(url)
+        token_dict = Client.get_client().fetch_access_token(url)
+        self.access_token = token_dict["access_token"]
+        self.refresh_token = token_dict["refresh_token"]
 
     @XBlock.json_handler
     def check_answers(self, request_data, suffix=''):  # pylint: disable=unused-argument
@@ -286,31 +282,32 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         url = request_data["url"]
         if url:
             self.submitted_url = url
-        # Either intentionally submitting current answer OR forced into submitting current
-        if request_data["is_final_submission"] or self.attempts >= self.max_attempts:
-            if not self.is_checked():
+
+        try:
+            # Either intentionally submitting current answer OR forced into submitting current
+            if request_data["is_final_submission"] or self.attempts >= self.max_attempts:
+                if not self.is_checked():
+                    self.perform_checks()
+                self.submit_final_grade()
+            # Checking the current answer
+            else:
                 self.perform_checks()
-            self.submit_final_grade()
-        # Checking the current answer
-        else:
-            self.perform_checks()
+                # Need to authenticate with OAuth
+        except OAuthNotAuthorizedException as e:
+            client = Client.get_client()
+            self.set_need_to_authorize(client.oauth.authorization_url(client.authorization_uri))
+            self.set_errors(e)
+        except Exception as e:
+            self.set_errors(e)
         return self.assemble_ui_dictionary()
 
     def perform_checks(self):
         """Grade the submitted url and return either the error from the Onshape server
         OR return the ui dictionary."""
         check_context = CheckContext(check_init_list=self.check_list, onshape_element=self.submitted_url)
-        try:
-            self.response_list = check_context.perform_all_checks()
-            self.score = self.calculate_points()
-            self.attempts += 1
-        # Need to authenticate with OAuth
-        except NotImplementedError as e:
-            client = Client.get_client()
-            self.set_need_to_authorize(client.oauth.authorization_url(client.authorization_uri))
-            self.set_errors(e)
-        except Exception as e:
-            self.set_errors(e)
+        self.response_list = check_context.perform_all_checks()
+        self.score = self.calculate_points()
+        self.attempts += 1
 
     def submit_final_grade(self):
         """Submit the grade to official xblock course."""
@@ -331,24 +328,29 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
 
         check_list = [{'type': 'volume'}, {'type': 'mass'}, {'type': 'center_of_mass'}, {'type': 'part_count'}, {'type': 'feature_list'}]
 
-        check_xml_1 = ("Onshape XBlock",
+        check_oauth = ("Onshape XBlock Testing OAUTH",
                        """\
-                            <onshape_xblock max_attempts='3' 
-                                question_type='simple_checker' 
-                                check_list={check_list} 
-                                prompt="\<html\>">
+                            <onshape_xblock 
+                                max_attempts="3" 
+                                client_id="{client_id}"
+                                client_secret="{client_secret}" 
+                                redirect_uri="{redirect_uri}">
                             </onshape_xblock>
-                        """.format(check_list=json.dumps(check_list))
+                        """.format(client_id=os.environ["ONSHAPE_CLIENT_ID"],
+                                   client_secret=os.environ["ONSHAPE_CLIENT_SECRET"],
+                                   redirect_uri=os.environ["ONSHAPE_REDIRECT_URL"])
                        )
 
-        return [
-            ("three onshape xblocks at once",
+        three_at_once = ("Three Onshape Xblocks at once",
              """\
                 <vertical_demo>
                     <onshape_xblock/>
                     <onshape_xblock/>
                     <onshape_xblock/>
                 </vertical_demo>
-             """),scenario_default
+             """)
+
+        return [
+            three_at_once ,scenario_default, check_oauth
 
         ]
