@@ -101,18 +101,24 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     error = String(scope=Scope.user_state, default="")
 
     # OAuth initialization vars
-    access_token = String(scope=Scope.preferences, default="")
-    refresh_token = String(scope=Scope.preferences, default="")
     client_id = String(scope=Scope.content, default="")
     client_secret = String(scope=Scope.content, default="")
     redirect_uri = String(scope=Scope.content, default="")
 
     # OAuth status vars
-    need_to_authenticate = Boolean(scope=Scope.user_state, default=False)
-    oauth_authorization_url = String(scope=Scope.user_state, default="")
+    access_token = String(scope=Scope.preferences, default="")
+    refresh_token = String(scope=Scope.preferences, default="")
+    need_to_authenticate = Boolean(scope=Scope.preferences, default=False)
+    oauth_authorization_url = String(scope=Scope.preferences, default="")
 
     has_score = True
     icon_class = "problem"
+
+    def total_max_points(self):
+        cumulative = 0
+        for response in self.response_list:
+            cumulative += response["max_points"]
+        return cumulative
 
     def resource_string(self, path):
         """Handy helper for getting resources from our kit."""
@@ -131,7 +137,9 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                                   "authorization_uri": "https://oauth.onshape.com/oauth/authorize",
                                   "oauth_authorization_method": OAuthAuthorizationMethods.MANUAL_FLOW,
                                   "scope": ["OAuth2Read"],
-                                  "redirect_uri": self.redirect_uri
+                                  "redirect_uri": self.redirect_uri,
+                                  "access_token": self.access_token,
+                                  "refresh_token": self.refresh_token
             })
 
     def oauth_login_view(self, context):
@@ -194,12 +202,6 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         init_args = self.assemble_ui_dictionary()
         frag.initialize_js('entry_point', json_args=init_args)
         return frag
-
-    def total_max_points(self):
-        cumulative = 0
-        for check in self.check_list:
-            cumulative += check["max_points"]
-        return cumulative
 
     def calculate_points(self):
         cumulative = 0
@@ -326,7 +328,9 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
 
         scenario_default = ("Default Onshape XBlock", "<onshape_xblock/>")
 
-        check_list = [{'type': 'volume'}, {'type': 'mass'}, {'type': 'center_of_mass'}, {'type': 'part_count'}, {'type': 'feature_list'}]
+        check_list_small = [{'check_type': 'check_volume'}]
+
+        check_list = [{'check_type': 'check_volume'}, {'check_type': 'check_mass'}, {'check_type': 'check_center_of_mass'}, {'check_type': 'check_part_count'}, {'check_type': 'check_feature_list'}]
 
         check_oauth = ("Onshape XBlock Testing OAUTH",
                        """\
@@ -334,11 +338,13 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                                 max_attempts="3" 
                                 client_id="{client_id}"
                                 client_secret="{client_secret}" 
-                                redirect_uri="{redirect_uri}">
+                                redirect_uri="{redirect_uri}"
+                                check_list="{check_list}">
                             </onshape_xblock>
                         """.format(client_id=os.environ["ONSHAPE_CLIENT_ID"],
                                    client_secret=os.environ["ONSHAPE_CLIENT_SECRET"],
-                                   redirect_uri=os.environ["ONSHAPE_REDIRECT_URL"])
+                                   redirect_uri=os.environ["ONSHAPE_REDIRECT_URL"],
+                                   check_list=check_list_small),
                        )
 
         three_at_once = ("Three Onshape Xblocks at once",

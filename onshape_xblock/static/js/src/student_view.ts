@@ -192,7 +192,7 @@ export class OnshapeBlock {
             if (data.error === "OAuthNotAuthenticated") {
                 this.openOauthPopup(data.oauthUrl)
             }
-            this.$status_message.text(data.error)
+            this.$status_message.text("Please follow the popup in order to authenticate EdX for your Onshape account then submit your answer again.")
         }
         else{
             this.updateFlags(data);
