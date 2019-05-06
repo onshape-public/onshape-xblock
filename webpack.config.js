@@ -56,7 +56,7 @@ module.exports = {
 
     entry: {
         student_view: './onshape_xblock/static/js/src/student_view.ts',
-        studio_view: './onshape_xblock/static/js/src/studio_view.ts',
+        studio_view: './onshape_xblock/static/js/src/studio_view.tsx',
         oauth_login_view: './onshape_xblock/static/js/src/oauth_login_view.ts'
     },
 

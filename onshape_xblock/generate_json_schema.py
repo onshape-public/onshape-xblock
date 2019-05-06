@@ -51,7 +51,7 @@ class GenerateCheckListForm():
                         check_type
                     ]
                 },
-                "additional_args": {
+                "check_parameters": {
                     "$ref": "#/definitions/check_base/definitions/" + check_type
                 }
             }}

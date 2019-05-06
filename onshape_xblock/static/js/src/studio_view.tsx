@@ -15,7 +15,7 @@ $(function ($) {
 
     //If this is running on the stack, look for the edit button, otherwise if in the sdk, jump straight to the function:
     if ($editButton.length) {
-        setTimeout(() => setDOM(), 8000);
+        setTimeout(() => setDOM(), 2000);
     } else {
         setDOM();
     }
@@ -27,7 +27,7 @@ function setDOM() {
 }
 
 function _setDom() {
-        $checkList = $("#xb-field-edit-check_list");
+    $checkList = $("#xb-field-edit-check_list");
     formListItemHtml = '<li className="field comp-setting-entry metadata_entry " data-field-name="check_list_form" >';
 
     $checkList.before(formListItemHtml);
@@ -37,22 +37,20 @@ function _setDom() {
 
     console.log("The DOM is set accordingly with the react json form.");
 
-    loadForm((<any>window).check_list_form);
-}
-
-function loadForm(schema: any) {
-    var log = function log(type: any) {
-        return console.log.bind(console, type);
-    };
-
-    ReactDOM.render(React.createElement(Form, {
-        schema: schema,
-        onChange: onFormChange,
-        onSubmit: log("submitted"),
-        onError: log("errors")
-    }), $form[0]);
+    loadForm((window as any).check_list_form);
 }
 
 function onFormChange(data: any) {
-    $checkList.text(JSON.stringify(data.formData.this_array));
+    $checkList.text(JSON.stringify(data.formData.check_array));
+}
+
+function loadForm(schema: any) {
+
+    ReactDOM.render((  <Form schema={schema}
+        onChange={onFormChange}>
+        <div>
+          <button type="submit" hidden={true}>Submit</button>
+        </div>
+      </Form>
+    ), $form[0])
 }

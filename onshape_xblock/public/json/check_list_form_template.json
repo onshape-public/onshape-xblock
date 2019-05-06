@@ -12,18 +12,20 @@
         "check_type": {
           "default": "check_volume",
           "enum": [],
-          "type": "string"
+          "type": "string",
+          "title": "Type of check:"
         }
       }
     }
   },
   "type": "object",
   "properties": {
-    "this_array": {
+    "check_array": {
       "items": {
         "$ref": "#/definitions/check_base"
       },
-      "type": "array"
+      "type": "array",
+      "title": "Checks to be performed:"
     }
   }
 }

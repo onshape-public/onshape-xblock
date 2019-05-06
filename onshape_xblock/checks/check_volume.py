@@ -14,15 +14,20 @@ class CheckVolume(CheckBase):
             "type": "object",
             "properties": {
                 "part_number": {
-                    "type": "number"
+                    "default": 0,
+                    "description": "a longer description, perhaps with some html?",
+                    "type": "number",
+                    "title": "The index of the part in the parts list"
                 },
                 "min_volume": {
-                    "default": "0 meter**3",
                     "type": "string",
-                    "title": "The minimum volume the part can have"
+                    "default": "0 meter**3",
+                    "title": "The minimum volume the part can have. If no units are specified, defaults to meter**3."
                 },
                 "max_volume": {
-                    "type": "string"
+                    "type": "string",
+                    "default": "1 meter**3",
+                    "title": "The maximum volume the part can have. If no units are specified, defaults to meter**3."
                 }
             }
         }
