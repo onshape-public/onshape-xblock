@@ -78,7 +78,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         help='The number of times a user can submit a check. None indicates there is no limit.',
         scope=Scope.settings,
         enforce_type=False,
-        default=3,
+        default=1,
     )
 
     editable_fields = [
@@ -88,7 +88,10 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         'display_name',
         'check_list',
         'help_text',
-        'max_attempts'
+        'max_attempts',
+        'client_id',
+        'client_secret',
+        'redirect_uri'
     ]
 
     # The number of points awarded.
@@ -100,12 +103,12 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     response_list = List(scope=Scope.user_state, default=[])
     error = String(scope=Scope.user_state, default="")
 
-    # OAuth initialization vars
+    # OAuth initialization vars (these are set by the course creator.)
     client_id = String(scope=Scope.content, default="")
     client_secret = String(scope=Scope.content, default="")
     redirect_uri = String(scope=Scope.content, default="")
 
-    # OAuth status vars
+    # OAuth status vars (these are per user state)
     access_token = String(scope=Scope.preferences, default="")
     refresh_token = String(scope=Scope.preferences, default="")
     need_to_authenticate = Boolean(scope=Scope.preferences, default=False)
@@ -296,10 +299,11 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                 self.perform_checks()
                 # Need to authenticate with OAuth
         except OAuthNotAuthorizedException as e:
+            # Client id/ Client secret aren't specified
             client = Client.get_client()
             self.set_need_to_authorize(client.oauth.authorization_url(client.authorization_uri))
             self.set_errors(e)
-        except Exception as e:
+        except ApiException as e:
             self.set_errors(e)
         return self.assemble_ui_dictionary()
 
@@ -330,9 +334,9 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
 
         check_list_small = [{'check_type': 'check_volume'}]
 
-        check_list = [{'check_type': 'check_volume'}, {'check_type': 'check_mass'}, {'check_type': 'check_center_of_mass'}, {'check_type': 'check_part_count'}, {'check_type': 'check_feature_list'}]
+        check_list_all = [{'check_type': 'check_volume'}, {'check_type': 'check_mass'}, {'check_type': 'check_center_of_mass'}, {'check_type': 'check_part_count'}, {'check_type': 'check_feature_list'}]
 
-        check_oauth = ("Onshape XBlock Testing OAUTH",
+        oauth_scenario = ("Onshape XBlock Testing OAUTH",
                        """\
                             <onshape_xblock 
                                 max_attempts="3" 
@@ -347,7 +351,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                                    check_list=check_list_small),
                        )
 
-        three_at_once = ("Three Onshape Xblocks at once",
+        three_at_once_scenario = ("Three Onshape Xblocks at once",
              """\
                 <vertical_demo>
                     <onshape_xblock/>
@@ -356,7 +360,24 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                 </vertical_demo>
              """)
 
+        one_shot_scenario = ("Onshape XBlock one_shot_scenario",
+                       """\
+                            <onshape_xblock 
+                                max_attempts="1" 
+                                client_id="{client_id}"
+                                client_secret="{client_secret}" 
+                                redirect_uri="{redirect_uri}"
+                                check_list="{check_list}">
+                            </onshape_xblock>
+                        """.format(client_id=os.environ["ONSHAPE_CLIENT_ID"],
+                                   client_secret=os.environ["ONSHAPE_CLIENT_SECRET"],
+                                   redirect_uri=os.environ["ONSHAPE_REDIRECT_URL"],
+                                   check_list=check_list_small),
+                       )
+
+
+
         return [
-            three_at_once ,scenario_default, check_oauth
+            three_at_once_scenario ,scenario_default, oauth_scenario
 
         ]
