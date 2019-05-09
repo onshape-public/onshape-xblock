@@ -99,7 +99,7 @@ class CheckConfiguration(CheckBase):
         if len(configuration_target_list) != len(configs):
             self.passed = False
             self.failure_reason = "params_length_mismatch"
-            self.failure = {"target_length": len(configuration_target_list), }
+            self.failure = {"target_length": len(configuration_target_list)}
             return
 
         # Build the configuration list
@@ -124,6 +124,7 @@ class CheckConfiguration(CheckBase):
             result["failure_reason"] = "config_type_mismatch"
             result["actual_type"] = config_actual_type
             result["target_type"] = config_target_type
+            # short circuit if types don't match
             return result
 
         # Check for type constraints mismatch

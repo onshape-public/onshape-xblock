@@ -162,8 +162,9 @@ class CheckBase(object):
     def get_features(self):
         res = self.client.part_studios_api.get_features(self.onshape_element.did, self.onshape_element.wvm,
                                                         self.onshape_element.wvmid,
-                                                        self.onshape_element.eid)
-        return res_to_dict(res)
+                                                        self.onshape_element.eid, _preload_content=False)
+        res = res_to_dict(res)
+        return res["features"]
 
     def get_configuration(self):
         res = self.client.part_studios_api.get_configuration4(self.onshape_element.did, self.onshape_element.wvm,
