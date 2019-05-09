@@ -3,6 +3,7 @@ from onshape_client.client import Client
 from onshape_client.onshape_url import OnshapeElement
 from jinja2 import Template
 from onshape_xblock.utility import res_to_dict
+from copy import deepcopy
 
 
 class CheckBase(object):
@@ -21,26 +22,82 @@ class CheckBase(object):
      html if desired. Alternatively, check feedback can be turned off."""
     __metaclass__ = ABCMeta
 
-    check_type = "check_base"
+    failure_message_template = "Unfortunately your submission did not pass the {{name}} check."
+    success_message_template = "Check {{name}} has passed! Congratulations!"
+    message_template_default_description = "This field accepts any Jinja-renderable template. "
+    context_vars_message = "The context vars for the Jinja template are: max_points, check_name "
+
+    # Override within a subclass in order to show more properties for a given check.
+    additional_form_properties = {}
+    additional_context_vars = ""
+
+    # When accessing from a subclass to edit, make sure not to edit this dict directly. Instead use the provided static
+    # methods
+    @classmethod
+    def form_definition(cls):
+        __form_definition = \
+            {"type": "object",
+             "properties": {
+                 "max_points": {
+                     "type": "number",
+                     "title": "Maximum Points",
+                     "default": 1
+                 },
+                 "edit_check_feedback": {
+                     "type": "boolean",
+                     "title": "Edit the response given to the student (IN BETA)"
+                 }
+             },
+             "dependencies": {
+                 "edit_check_feedback": {
+                     "oneOf": [
+                         {"properties": {
+                             "edit_check_feedback": {
+                                 "enum": [
+                                     True
+                                 ]
+                             },
+                             "name": {
+                                 "type": "string",
+                                 "title": "Name of the Check",
+                                 "default": "A Check"
+                             },
+                             "failure_message_template": {
+                                 "type": "string",
+                                 "title": "Feedback to the student in the case of an incorrect answer.",
+                                 "description": cls.message_template_default_description + cls.context_vars_message + cls.additional_context_vars,
+                                 "default": cls.failure_message_template
+                             },
+                             "success_message_template": {
+                                 "type": "string",
+                                 "default": cls.success_message_template
+                             },
+
+                         }
+                         },
+                         {"properties": {
+                             "edit_check_feedback": {
+                                 "enum": [
+                                     False
+                                 ]
+                             }
+                         }
+                         }
+                     ]
+                 }
+             }
+             }
+        __form_definition["properties"].update(cls.additional_form_properties)
+        return __form_definition
 
     # How the check form will be displayed. You can see what this will look like by visiting
     # https://mozilla-services.github.io/react-jsonschema-form/ and putting it into the JSONSchema field. Note that
     # this needs to be implemented as a static field on the class itself.
-    form_definition = \
-        {"type": "object",
-         "properties": {
-             "max_points": {
-                 "type": "number",
-                 "title": "Maximum Points",
-                 "default": 1
-             },
-             "name": {
-                 "type": "string",
-                 "title": "Name of the Check",
-                 "default": "A Check"
-             },
-         }
-         }
+    @classmethod
+    def form_definition_add_properties(cls, properties):
+        form_definition_copy = deepcopy(cls.form_definition)
+        form_definition_copy.update(properties)
+        return form_definition_copy
 
     def __init__(self, name="The checker name", max_points=1,
                  onshape_element=None):
@@ -58,15 +115,13 @@ class CheckBase(object):
         self.onshape_element = onshape_element if isinstance(onshape_element, OnshapeElement) or not onshape_element \
             else OnshapeElement(onshape_element)
 
-        # The failure message if the check has failed
-        self.failure_message = ""
-
         # Whether or not the check passed
         self.passed = False
 
     @abstractmethod
     def execute_check(self):
-        """A method that checks the Onshape document and sets feedback based on what it finds.
+        """A method that checks the Onshape document and sets feedback based on what it finds. It should set
+        failure_message or success_message depending on whether it passed or not.
 
         Parameters
         ----------
@@ -75,23 +130,17 @@ class CheckBase(object):
         """
         return NotImplemented
 
-    def get_display_feedback(self):
+    def perform_check_and_get_display_feedback(self):
         """Return only things that should get passed to the UI.
         """
 
         self.execute_check()
+        self.format_feedback_messages()
         if self.passed:
             self.points = self.max_points
-        else:
-            self.format_failure_message()
-        return {"message": self.failure_message, "passed": self.passed, "max_points": self.max_points,
+        return {"message": self.success_message if self.passed else self.failure_message, "passed": self.passed,
+                "max_points": self.max_points,
                 "points": self.points}
-
-    @abstractproperty
-    def failure_message_template(self):
-        pass
-
-    #     Useful shared client functions.
 
     def get_part_id(self, part_number):
         """Return the partId of the part specified by "part_number" at the part specified by did, wvm, eid"""
@@ -123,7 +172,8 @@ class CheckBase(object):
 
         return res_to_dict(res)
 
-    def format_failure_message(self):
+    def format_feedback_messages(self):
         self.failure_message = Template(self.failure_message_template).render(self.__dict__)
+        self.success_message = Template(self.success_message_template).render(self.__dict__)
 
 #   ----------------------------PRIVATE FUNCTIONS -------------------------------------

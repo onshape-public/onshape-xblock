@@ -15,7 +15,7 @@ $(function ($) {
 
     //If this is running on the stack, look for the edit button, otherwise if in the sdk, jump straight to the function:
     if ($editButton.length) {
-        setTimeout(() => setDOM(), 2000);
+        setTimeout(() => setDOM(), 0);
     } else {
         setDOM();
     }

@@ -29,7 +29,7 @@ class CheckContext(object):
         """
         feedback_list = []
         for check in self.checks:
-            feedback_list.append(check.get_display_feedback())
+            feedback_list.append(check.perform_check_and_get_display_feedback())
         return feedback_list
 
     def create_check(self, check_init_args):

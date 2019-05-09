@@ -82,16 +82,14 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     )
 
     editable_fields = [
-        'api_access_key',
-        'api_secret_key',
+        'client_id',
+        'client_secret',
+        'redirect_uri',
         'prompt',
         'display_name',
         'check_list',
         'help_text',
-        'max_attempts',
-        'client_id',
-        'client_secret',
-        'redirect_uri'
+        'max_attempts'
     ]
 
     # The number of points awarded.
@@ -104,9 +102,17 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     error = String(scope=Scope.user_state, default="")
 
     # OAuth initialization vars (these are set by the course creator.)
-    client_id = String(scope=Scope.content, default="")
-    client_secret = String(scope=Scope.content, default="")
-    redirect_uri = String(scope=Scope.content, default="")
+    client_id = String(scope=Scope.content,
+                       default="",
+                       display_name="Client ID",
+                       help='Please create an OAuth app on the Onshape dev portal for this block here: https://dev-portal.onshape.com . Make sure to give the app read scope. This value need only be entered once per course')
+    client_secret = String(scope=Scope.content,
+                           display_name="Client Secret",
+                           default="")
+    redirect_uri = String(scope=Scope.content,
+                          display_name="Redirect URI",
+                          default="",
+                          help="This redirect url should look something like: http://104.154.245.15/courses/course-v1:Onshape+OS101+SP2019/xblock/block-v1:Onshape+OS101+SP2019+type@onshape_xblock+block@b8a2ba01ca3e4542a02833e5ea5be3d5/handler/oauth_login_view .")
 
     # OAuth status vars (these are per user state)
     access_token = String(scope=Scope.preferences, default="")
@@ -131,9 +137,9 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     def get_client(self):
         """Start the client if the client isn't already started."""
         try:
-            Client.get_client(create_if_needed=False)
+            client = Client.get_client(create_if_needed=False)
         except Exception as e:
-            Client(configuration={"client_id": self.client_id,
+            client = Client(configuration={"client_id": self.client_id,
                                   "client_secret": self.client_secret,
                                   "base_url": "https://cad.onshape.com",
                                   "token_uri": "https://oauth.onshape.com/oauth/token",
@@ -144,6 +150,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                                   "access_token": self.access_token,
                                   "refresh_token": self.refresh_token
             })
+        return client
 
     def oauth_login_view(self, context):
         html = loader.render_django_template('templates/html/oauth_login_view.html', {})
@@ -160,19 +167,17 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         The studio view presented to the creator of the Onshape XBlock. This includes dynamic xblock type selection.
 
         """
-        self.get_client()
-
         frag = super(OnshapeXBlock, self).studio_view(context)
 
-        js_context = dict(
-            check_list_form=self.resource_string('public/json/check_list_form.json')
-        )
-        js = loader.render_django_template("static/js/inject_vars.js", js_context)
-
-        frag.add_javascript(js)
-        frag.add_javascript(self.resource_string("static/js/dist/studio_view.js"))
-
-        frag.initialize_js("")
+        # js_context = dict(
+        #     check_list_form=self.resource_string('public/json/check_list_form.json')
+        # )
+        # js = loader.render_django_template("static/js/inject_vars.js", js_context)
+        #
+        # frag.add_javascript(js)
+        # frag.add_javascript(self.resource_string("static/js/dist/studio_view.js"))
+        #
+        # frag.initialize_js("")
 
         return frag
 
@@ -182,11 +187,11 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         The primary view of the Onshape_xblock, shown to students
         when viewing courses.
         """
-        self.get_client()
         context = dict(
             help_text=self.help_text,
             prompt=self.prompt,
-            check_list=self.check_list
+            check_list=self.check_list,
+            max_attempts=self.max_attempts
         )
 
         html = loader.render_django_template('templates/html/onshape_xblock.html', context)
@@ -283,6 +288,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         request_data: dict
             The data with a "url" key that points to the onshape url.
         """
+        client = self.get_client()
         self.clear_errors()
         url = request_data["url"]
         if url:
@@ -300,7 +306,6 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                 # Need to authenticate with OAuth
         except OAuthNotAuthorizedException as e:
             # Client id/ Client secret aren't specified
-            client = Client.get_client()
             self.set_need_to_authorize(client.oauth.authorization_url(client.authorization_uri))
             self.set_errors(e)
         except ApiException as e:
@@ -330,13 +335,11 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     def workbench_scenarios():
         """A canned scenario for display in the workbench."""
 
-        scenario_default = ("Default Onshape XBlock", "<onshape_xblock/>")
-
         check_list_small = [{'check_type': 'check_volume'}]
 
         check_list_all = [{'check_type': 'check_volume'}, {'check_type': 'check_mass'}, {'check_type': 'check_center_of_mass'}, {'check_type': 'check_part_count'}, {'check_type': 'check_feature_list'}]
 
-        oauth_scenario = ("Onshape XBlock Testing OAUTH",
+        scenario_default = ("Default Onshape XBlock",
                        """\
                             <onshape_xblock 
                                 max_attempts="3" 
@@ -375,9 +378,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                                    check_list=check_list_small),
                        )
 
-
-
         return [
-            three_at_once_scenario ,scenario_default, oauth_scenario
+            three_at_once_scenario ,scenario_default
 
         ]

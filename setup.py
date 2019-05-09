@@ -23,7 +23,7 @@ def package_data(pkg, roots):
 
 setup(
     name='onshape_xblock',
-    version='0.0.25',
+    version='0.0.28',
     description='The Onshape Xblock used to grade Onshape elements according to a number of criteria.',
     license='MIT',
     packages=[
@@ -48,5 +48,5 @@ setup(
             'onshape_xblock = onshape_xblock:OnshapeXBlock'
         ]
     },
-    package_data=package_data("onshape_xblock", ["static", "public", "templates"]),
+    package_data=package_data("onshape_xblock", ["static", "public", "templates", "checks"]),
 )

@@ -8,11 +8,7 @@ class CheckVolume(CheckBase):
 
     failure_message_template = "Your part's volume of {{volume}} is incorrect. It should be between {{min_volume}} and {{max_volume}}. {{points}}/{{max_points}}"
     success_message_template = "Volume check passed!"
-
-    form_definition = \
-        {
-            "type": "object",
-            "properties": {
+    additional_form_properties = {
                 "part_number": {
                     "default": 0,
                     "description": "a longer description, perhaps with some html?",
@@ -30,8 +26,6 @@ class CheckVolume(CheckBase):
                     "title": "The maximum volume the part can have. If no units are specified, defaults to meter**3."
                 }
             }
-        }
-
 
     def __init__(self,
                  min_volume=0 * u.m ** 3,

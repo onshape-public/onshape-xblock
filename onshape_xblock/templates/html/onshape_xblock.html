@@ -27,7 +27,9 @@
                 <label for="onshape_url" class="sr-only">Onshape Element URL</label>
                 <input type="url" class="form-control" id="onshape_url" placeholder="Onshape Element URL">
             </div>
+            {% if max_attempts > 1 %}
             <button id="check_button" type="submit" class="btn btn-primary mb-2">Check Answer</button>
+            {% endif %}
         </form>
         <div id="attempt_counter" class="submission-feedback"></div>
         <div id="status_message"></div>

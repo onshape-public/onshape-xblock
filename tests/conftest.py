@@ -19,6 +19,6 @@ def checker_function(check_context):
     def checker(onshape_element, check_init_args):
         check_context.onshape_element = onshape_element
         check = check_context.create_check(check_init_args)
-        feedback = check.get_display_feedback()
+        feedback = check.perform_check_and_get_display_feedback()
         return feedback
     return checker

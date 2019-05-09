@@ -5,31 +5,86 @@ class CheckConfiguration(CheckBase):
     """A configuration check
 
     This configuration check checks whether or not the specified Onshape part has a configuration within the bounds defined. """
+    configuration_target_list_default = [{"configuration_type": "List", "row_count": 5},
+                                         {"configuration_type": "Variable", "params_count": 5},
+                                         {"configuration_type": "Checkbox"}]
 
-    form_definition = {
-          "type": "object",
-          "properties": {
-            "max_points": {
-              "default": 1,
-              "type": "number",
-              "title": "Maximum Points"
-            },
-            "name": {
-              "default": "A Check",
-              "type": "string",
-              "title": "Name of the Check"
+    additional_form_properties = {
+        "config_target": {
+            "type": "array",
+            "title": "Target configuration definition",
+            "items": {
+                "type": "object",
+                "title": "Configuration Setting",
+                "properties": {
+                    "configuration_type": {
+                        "title": "The configuration type of this setting",
+                        "type": "string",
+                        "default": "List",
+                        "enum": [
+                            "List",
+                            "Variable",
+                            "Checkbox"
+                        ],
+                        "uniqueItems": True
+                    }
+                },
+                "dependencies": {
+                    "configuration_type": {
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "configuration_type": {
+                                        "enum": [
+                                            "List"
+                                        ]
+                                    },
+                                    "row_count": {
+                                        "type": "string",
+                                        "title": "Expected number of rows within this configuration setting"
+                                    }
+                                }
+                            },
+                            {
+                                "properties": {
+                                    "configuration_type": {
+                                        "enum": [
+                                            "Variable"
+                                        ]
+                                    },
+                                    "param_count": {
+                                        "type": "number",
+                                        "default": 0,
+                                        "title": "Expected number of dependencies on this variable"
+                                    }
+                                }
+                            },
+                            {
+                                "properties": {
+                                    "configuration_type": {
+                                        "enum": [
+                                            "Checkbox"
+                                        ]
+                                    },
+                                    "default": {
+                                        "type": "boolean",
+                                        "title": "Expected default for this setting (true if checked)"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                }
             }
-          }
         }
-    failure_message_template = "Your PartStudio has a {config_type_actual} in the configuration where it should have a {config_type_expected} configuration type."
-    success_message_template = "Your part's volume of {volume} is correct! You've been awarded {points}/{max_points}!"
+    }
 
     map = {"BTMConfigurationParameterEnum": "List",
            "BTMConfigurationParameterQuantity": "Variable",
            "BTMConfigurationParameterBoolean": "Checkbox"}
 
     def __init__(self,
-                 configuration_target_list=[{"type":"List", "row_count":5},{"type": "Variable", "params_count": 5},{"type":"Checkbox"}],
+                 configuration_target_list=configuration_target_list_default,
                  **kwargs):
         super(CheckConfiguration, self).__init__(name="Check Configuration", **kwargs)
         self.configuration_target_list = configuration_target_list
@@ -44,7 +99,7 @@ class CheckConfiguration(CheckBase):
         if len(configuration_target_list) != len(configs):
             self.passed = False
             self.failure_reason = "params_length_mismatch"
-            self.failure = {"target_length":len(configuration_target_list), }
+            self.failure = {"target_length": len(configuration_target_list), }
             return
 
         # Build the configuration list
@@ -61,7 +116,7 @@ class CheckConfiguration(CheckBase):
         type of failure it is. For example, this may be a response: {"reason":"config_type_mismatch", "target_type":
         "List", "actual_type":"Variable"}"""
         result = {}
-        config_target_type = config_target["type"]
+        config_target_type = config_target["configuration_type"]
         config_actual_type = CheckConfiguration.map[config_actual['typeName']]
 
         # Check for configuration type mismatch
@@ -87,6 +142,3 @@ class CheckConfiguration(CheckBase):
             raise TypeError("{} is not a proper configuration type. The acceptable types are List, Variable and "
                             "Checkbox.")
         return result
-
-
-
