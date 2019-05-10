@@ -10,6 +10,10 @@ def configured_cube_version():
     return OnshapeElement("https://cad.onshape.com/documents/cca81d10f239db0db9481e6f/v/ca51b7554314d6aab254d2e6/e/69c9eedda86512966b20bc90")
 
 @pytest.fixture
+def configured_cube_versioin_4_assembly():
+    return OnshapeElement("https://cad.onshape.com/documents/cca81d10f239db0db9481e6f/v/369ac699891d9659ce2d42ba/e/32fbe5d87f9b2777a37ddee9")
+
+@pytest.fixture
 def check_context():
     return CheckContext()
 

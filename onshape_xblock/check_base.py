@@ -160,6 +160,7 @@ class CheckBase(object):
         return mass_props
 
     def get_features(self):
+        """get the feature list even if this is an assembly."""
         res = self.client.part_studios_api.get_features(self.onshape_element.did, self.onshape_element.wvm,
                                                         self.onshape_element.wvmid,
                                                         self.onshape_element.eid, _preload_content=False)
