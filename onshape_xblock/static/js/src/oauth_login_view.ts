@@ -1,4 +1,4 @@
-import {catService} from "./student_view";
+import {log} from "./student_view";
 var $ = (<any>window).$;
 
 class OAuthBlock {
@@ -14,7 +14,7 @@ class OAuthBlock {
     }
 
     constructor (runtime: any, element: any, init_args: object) {
-        catService.info("At the entry point for the oauth login view.");
+        log.info("At the entry point for the oauth login view.");
         this.runtime = runtime;
         this.element = element;
         this.init_args = init_args;

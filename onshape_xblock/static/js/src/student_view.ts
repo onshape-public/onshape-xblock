@@ -3,19 +3,19 @@ import {Category,CategoryLogger,CategoryServiceFactory,CategoryConfiguration,Log
 const $: any = (<any> window).$;
 
 CategoryServiceFactory.setDefaultConfiguration(new CategoryConfiguration(LogLevel.Info));
-export const catService = new Category("service");
+export const log = new Category("service");
 
 function MyXBlockAside(runtime: any, element: any, block_element: any, init_args: object) {
     return new OnshapeBlock(runtime, element, init_args);
 }
 
 function entry_point(runtime: any, element: any, init_args: object) {
-    catService.info("Entry point for the Onshape XBlock");
+    log.info("Entry point for the Onshape XBlock");
     return new OnshapeBlock(runtime, element, init_args);
 }
 
 $(function ($: any) {
-    catService.info("At the ready point");
+    log.info("At the ready point");
 });
 
 export class OnshapeBlock {
@@ -75,6 +75,9 @@ export class OnshapeBlock {
         this.$onshape_url = $('#onshape_url', element);
         this.$spinner = $('#spinner', element);
 
+        //First check if this is an OAuth response.
+        this.checkIfOauth();
+
         //HANDLERS - below are the handler calls for various actions.
 
         // CHECK THE ONSHAPE ELEMENT
@@ -89,9 +92,16 @@ export class OnshapeBlock {
         $('#activetable-help-button', element).click(() => this.toggleHelp);
     }
 
-    public static create_block(runtime: any, element: any, init_args: object) {
-        let yo="hi";
-        return new OnshapeBlock(runtime, element, init_args);
+    checkIfOauth() {
+        if (window.location.href.includes("code")) {
+            var handlerUrl = this.runtime.handlerUrl(this.element, 'finish_oauth_authorization');
+            $.ajax({
+                type: "POST",
+                url: handlerUrl,
+                data: JSON.stringify({authorization_code_url: window.location.href}),
+                success: () => log.info("Logged in with OAuth")
+            });
+        }
     }
 
     // Update the feedback for the user. If multiple checks, this will display all the check messages of the checks
@@ -165,7 +175,7 @@ export class OnshapeBlock {
 
     // To be called when the check button is clicked
     checkAnswer(){
-        catService.info("Checking the answer");
+        log.info("Checking the answer");
         this.makeButtonsWait();
         let url = this.$onshape_url.val();
         this.callHandler({url : this.handlerUrl("check_answers"), data:{url: url, is_final_submission: this.is_final_submission}, onSuccess: (data: any, status: any, error: any) => this.updateFeedback(data, status, error)});
@@ -190,7 +200,7 @@ export class OnshapeBlock {
         // Catch evaluation errors
         else if (data.error !== ""){
             if (data.error === "OAuthNotAuthenticated") {
-                this.openOauthPopup(data.oauthUrl);
+                this.followOAuth(data.oauthUrl);
                 this.$status_message.text("Please follow the popup in order to authenticate EdX for your Onshape account then submit your answer again.");
 
             } else {
@@ -212,9 +222,8 @@ export class OnshapeBlock {
         this.submitted_url = data.submitted_url;
     }
 
-    openOauthPopup(url: string){
-        let windowName = "Oauth";
-        window.open(url,windowName,'height=500,width=500');
+    followOAuth(url: string){
+        window.location.href = url;
     }
 
 
@@ -225,7 +234,7 @@ export class OnshapeBlock {
 
     // Call the specified url with the user-specified document url.
     callHandler(opts: any) {
-        catService.info("Calling the backend with opts: " + opts);
+        log.info("Calling the backend with opts: " + opts);
 
         const url = opts["url"];
         let data = opts["data"];

@@ -27,20 +27,20 @@
     const Form = JSONSchemaForm.default;
     $.getJSON("public/json/check_list_form.json", "", (schema) => render(schema));
     const log = (type) => console.log.bind(console, type);
-    const onSubmit = ({formData}, e) => {
-        $(":submit").attr("disabled", true);
-        $.post("http://localhost:9000/", JSON.stringify(formData)).then((response) => replaceWithUrl(response));
-    };
-    const replaceWithUrl = (response) => {
-        $("#my_body").replaceWith('<a href='+response.document_href+' class="btn btn-primary btn-lg" style="margin: 20px" role="button" aria-disabled="true">Link to new document</a>')
-    };
     const render = function(schema) {
         ReactDOM.render((
         <Form schema={schema}
-              onChange={log("changed")}
-              onSubmit={onSubmit}
+              onChange={onChange}
+              onSubmit={log("submitted")}
               onError={log("errors")}/>
     ), document.getElementById("my_body"));
+        //Hide the submit button as it doesn't make sense in this context and add the text area field
+        $('<div class="form-group"><textarea class="form-control" id="resultOutput" rows="3"></textarea></div>').insertBefore($(":submit"));
+        $(":submit").hide();
+    };
+    const onChange = function(resultOutput) {
+        $("#resultOutput").val(resultOutput);
+        $("#resultOutput").attr("readonly");
     }
 </script>
 </html>

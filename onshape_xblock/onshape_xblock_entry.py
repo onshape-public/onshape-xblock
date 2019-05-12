@@ -255,9 +255,9 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                 self.error = body["message"]
 
     # The callback for the OAuth client
-    def set_need_to_authorize(self, url):
+    def set_need_to_authorize(self, url_state_tuple):
         self.need_to_authenticate = True
-        self.oauth_authorization_url, state = url
+        self.oauth_authorization_url, state = url_state_tuple
 
 
     def get_oauth_authorize_message(self):
@@ -350,7 +350,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                             </onshape_xblock>
                         """.format(client_id=os.environ["ONSHAPE_CLIENT_ID"],
                                    client_secret=os.environ["ONSHAPE_CLIENT_SECRET"],
-                                   redirect_uri=os.environ["ONSHAPE_REDIRECT_URL"],
+                                   redirect_uri="http://localhost:8000/scenario/onshape_xblock.1/",
                                    check_list=check_list_small),
                        )
 
