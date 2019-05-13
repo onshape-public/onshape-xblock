@@ -25,7 +25,7 @@
 <script type="text/babel">
     const $ = jQuery;
     const Form = JSONSchemaForm.default;
-    $.getJSON("public/json/check_list_form.json", "", (schema) => render(schema));
+    $.getJSON("onshape_xblock/public/json/check_list_form.json", "", (schema) => render(schema));
     const log = (type) => console.log.bind(console, type);
     const render = function(schema) {
         ReactDOM.render((
@@ -36,11 +36,12 @@
     ), document.getElementById("my_body"));
         //Hide the submit button as it doesn't make sense in this context and add the text area field
         $('<div class="form-group"><textarea class="form-control" id="resultOutput" rows="3"></textarea></div>').insertBefore($(":submit"));
+        $('<div class="form-group"><textarea class="form-control" id="resultOutput" rows="3"></textarea></div>').insertBefore($(":submit"));
         $(":submit").hide();
-    };
-    const onChange = function(resultOutput) {
-        $("#resultOutput").val(resultOutput);
         $("#resultOutput").attr("readonly");
+    };
+    const onChange = ({formData}) => {
+        $("#resultOutput").val(JSON.stringify(formData));
     }
 </script>
 </html>

@@ -1,4 +1,5 @@
 import {Category,CategoryLogger,CategoryServiceFactory,CategoryConfiguration,LogLevel} from "typescript-logging";
+import * as URLParse from "url-parse";
 // Importing the jquery that has the hooks already defined
 const $: any = (<any> window).$;
 
@@ -95,13 +96,23 @@ export class OnshapeBlock {
     checkIfOauth() {
         if (window.location.href.includes("code")) {
             var handlerUrl = this.runtime.handlerUrl(this.element, 'finish_oauth_authorization');
+            const authUrl = window.location.href;
             $.ajax({
                 type: "POST",
                 url: handlerUrl,
-                data: JSON.stringify({authorization_code_url: window.location.href}),
-                success: () => log.info("Logged in with OAuth")
+                data: JSON.stringify({authorization_code_url: authUrl}),
+                success: () => {
+                    log.info("Logged in with OAuth using authorization url: " + authUrl);
+                    this.continueCallAfterOAuth();
+                }
             });
         }
+    }
+
+    continueCallAfterOAuth() {
+        const url = new URLParse(window.location.href);
+        log.info("Finish call after OAUth (in continueCallAfterOAuth)")
+        this.checkAnswer();
     }
 
     // Update the feedback for the user. If multiple checks, this will display all the check messages of the checks

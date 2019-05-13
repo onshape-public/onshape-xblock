@@ -31,7 +31,7 @@ import os
 loader = ResourceLoader(__name__)  # pylint: disable=invalid-name
 
 # log_file_name = 'logs/onshape_xblock_{}.log'.format(datetime.now().strftime("%Y_%m_%d_%H_%M_%S"))
-logging.basicConfig(level=logging.DEBUG)
+logging.getLogger(__name__)
 logging.debug("Logs have started.")
 
 
@@ -240,6 +240,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
 
     def set_errors(self, error):
         """Evaluates and sets the necessary headers on the Onshape block from performing the checks."""
+        logging.debug("Errors during performing the check! : {}".format(error))
         try:
             raise error
         except (pint.errors.DimensionalityError) as err:
@@ -258,6 +259,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     def set_need_to_authorize(self, url_state_tuple):
         self.need_to_authenticate = True
         self.oauth_authorization_url, state = url_state_tuple
+        logging.debug("Authorization url set: {}".format(url_state_tuple[0]))
 
 
     def get_oauth_authorize_message(self):
@@ -273,12 +275,16 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         url = request_data["authorization_code_url"]
 
         # Pretend we have https so that the oauth library doesn't complain for using the XBlock SDK.
-        if 'https' not in url:
-            url = url.replace("http", "https")
+        if  not url.startswith("https") and url.startswith("http"):
+            url = url.replace("http", "https", 1)
 
-        token_dict = Client.get_client().fetch_access_token(url)
+        token_dict = self.get_client().fetch_access_token(url)
         self.access_token = token_dict["access_token"]
         self.refresh_token = token_dict["refresh_token"]
+
+        logging.debug("Completed OAuth flow and recieved tokens: (access): {} and refresh: {}"
+                      .format(self.access_token,
+                              self.refresh_token))
 
     @XBlock.json_handler
     def check_answers(self, request_data, suffix=''):  # pylint: disable=unused-argument
@@ -306,7 +312,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                 # Need to authenticate with OAuth
         except OAuthNotAuthorizedException as e:
             # Client id/ Client secret aren't specified
-            self.set_need_to_authorize(client.oauth.authorization_url(client.authorization_uri))
+            self.set_need_to_authorize(client.oauth.authorization_url(client.authorization_uri, state=self.submitted_url))
             self.set_errors(e)
         except ApiException as e:
             self.set_errors(e)
