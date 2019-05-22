@@ -82,6 +82,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     )
 
     editable_fields = [
+        'stack',
         'client_id',
         'client_secret',
         'redirect_uri',
@@ -102,6 +103,10 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     error = String(scope=Scope.user_state, default="")
 
     # OAuth initialization vars (these are set by the course creator.)
+    stack = String(scope=Scope.content,
+                       default="PROD",
+                       display_name="Stack",
+                       help='The stack to use for checking the documents. PROD for production, STAGE for staging, and DEMOC for democ')
     client_id = String(scope=Scope.content,
                        default="",
                        display_name="Client ID",
@@ -112,7 +117,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     redirect_uri = String(scope=Scope.content,
                           display_name="Redirect URI",
                           default="",
-                          help="This redirect url should look something like: http://104.154.245.15/courses/course-v1:Onshape+OS101+SP2019/xblock/block-v1:Onshape+OS101+SP2019+type@onshape_xblock+block@b8a2ba01ca3e4542a02833e5ea5be3d5/handler/oauth_login_view .")
+                          help="This redirect url should look something like: https://onshape-edx/courses/course-v1:Onshape+OS101+SP2019/xblock/block-v1:Onshape+OS101+SP2019+type@onshape_xblock+block@b8a2ba01ca3e4542a02833e5ea5be3d5. It is the same as the url for the Xblock itself.")
 
     # OAuth status vars (these are per user state)
     access_token = String(scope=Scope.preferences, default="")
@@ -139,11 +144,26 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         try:
             client = Client.get_client(create_if_needed=False)
         except Exception as e:
+
+            if self.stack == "STAGE":
+                base_url = "https://staging.dev.onshape.com"
+                token_uri = "https://staging-oauth.dev.onshape.com/oauth/token"
+                authorization_uri = "https://staging-oauth.dev.onshape.com/oauth/authorize"
+            elif self.stack == "DEMOC":
+                base_url = "https://demo-c.dev.onshape.com"
+                token_uri = "https://demo-c-oauth.dev.onshape.com/oauth/token"
+                authorization_uri = "https://demo-c-oauth.dev.onshape.com/oauth/authorize"
+            # PROD stack is default.
+            else:
+                base_url = "https://cad.onshape.com"
+                token_uri = "https://oauth.onshape.com/oauth/token"
+                authorization_uri = "https://oauth.onshape.com/oauth/authorize"
+
             client = Client(configuration={"client_id": self.client_id,
                                   "client_secret": self.client_secret,
-                                  "base_url": "https://cad.onshape.com",
-                                  "token_uri": "https://oauth.onshape.com/oauth/token",
-                                  "authorization_uri": "https://oauth.onshape.com/oauth/authorize",
+                                  "base_url": base_url,
+                                  "token_uri": token_uri,
+                                  "authorization_uri": authorization_uri,
                                   "oauth_authorization_method": OAuthAuthorizationMethods.MANUAL_FLOW,
                                   "scope": ["OAuth2Read"],
                                   "redirect_uri": self.redirect_uri,
@@ -226,7 +246,8 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
             attempts_made=self.attempts,
             submitted_url=self.submitted_url,
             response_list=self.response_list,
-            error=self.error
+            error=self.error,
+            need_to_authenticate=self.need_to_authenticate
         )
         if self.need_to_authenticate:
             ui_args["oauthUrl"] = self.oauth_authorization_url
@@ -286,6 +307,8 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                       .format(self.access_token,
                               self.refresh_token))
 
+        self.need_to_authenticate=False
+
     @XBlock.json_handler
     def check_answers(self, request_data, suffix=''):  # pylint: disable=unused-argument
         """Check the url given by the student against the constraints.
@@ -321,6 +344,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
     def perform_checks(self):
         """Grade the submitted url and return either the error from the Onshape server
         OR return the ui dictionary."""
+        logging.debug("Performing checks with the following state: {}".format(self.__dict__))
         check_context = CheckContext(check_init_list=self.check_list, onshape_element=self.submitted_url)
         self.response_list = check_context.perform_all_checks()
         self.score = self.calculate_points()

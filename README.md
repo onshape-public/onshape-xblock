@@ -10,7 +10,7 @@ For the bitnami stack, go to the application, and enter the following commands:
 ```bash
 sudo /opt/bitnami/use_edx
 source /opt/bitnami/apps/edx/venvs/edxapp/bin/activate
-pip install <my_xblock>==<the_version> --no-cache-dir
+pip install -U onshape_xblock --no-cache-dir
 sudo /opt/bitnami/ctlscript.sh restart apache
 
 ```
@@ -27,3 +27,18 @@ This XBlock uses pipenv to manage python packages and npm to manage the frontend
 To debug in pycharm, you should have the xblock sdk set up and running locally. Then, just add a run configuration that points to `<xblock_development_repo>/xblock-sdk` and passes the parameter `runserver`
 ### Building the Frontend
 To build the js from the ts that defines the frontend, simply run `npm run build`. This will put the output js into the dist folder and continue to watch the ts for additional changes, rebuilding as necessary. Very often, when you run into issues, they are related to the fact that the runtime expects the implemented js functionality to use the window object for all object names. Therefore, very often within typescript you need to set or get some object from the window object like so: `(<any>window).MyVeryImportantObject`. This should only be necessary when interacting with the js runtime.
+
+## Access the admin
+In order to access the admin console, you need to make an ssh tunnel as described here: https://docs.bitnami.com/oci/apps/edx/administration/access-edx-services/
+In short (you may need to change some of the defined vars):
+
+```bash
+SOURCE_PORT=1234
+DESTINATION_PORT=80
+KEYFILE=~/.bash/bitnami-google-bitnami-onshape-edx.pem
+SERVER_IP=35.188.211.229
+sudo ssh -N -L $SOURCE_PORT:127.0.0.1:$DESTINATION_PORT -i $KEYFILE bitnami@$SERVER_IP
+```
+
+Then go to: http://localhost:1234/admin/
+

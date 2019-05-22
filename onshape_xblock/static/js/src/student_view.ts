@@ -35,6 +35,7 @@ export class OnshapeBlock {
     protected submitted: boolean;
     protected submitted_url: String;
     protected is_final_submission: boolean;
+    protected need_to_authenticate: boolean;
 
     protected $status_message: any;
     protected $check_button: JQuery<HTMLElement>;
@@ -59,6 +60,7 @@ export class OnshapeBlock {
         this.submitted = init_args.submitted;
         this.submitted_url = init_args.submitted_url;
         this.is_final_submission = false;
+        this.need_to_authenticate = init_args.need_to_authenticate;
 
         // A message indicating that some have failed.
         this.$status_message = $('#status_message', element);
@@ -94,7 +96,8 @@ export class OnshapeBlock {
     }
 
     checkIfOauth() {
-        if (window.location.href.includes("code")) {
+        // Only assume this is an OAuth redirect if the block still needs authentication AND contains the code parameter
+        if (window.location.href.includes("code") && this.need_to_authenticate) {
             var handlerUrl = this.runtime.handlerUrl(this.element, 'finish_oauth_authorization');
             const authUrl = window.location.href;
             $.ajax({
@@ -111,6 +114,7 @@ export class OnshapeBlock {
 
     continueCallAfterOAuth() {
         const url = new URLParse(window.location.href);
+        this.submitted_url= new URLParse(window.location.href, '', true).query.state;
         log.info("Finish call after OAUth (in continueCallAfterOAuth)")
         this.checkAnswer();
     }
@@ -210,7 +214,7 @@ export class OnshapeBlock {
         }
         // Catch evaluation errors
         else if (data.error !== ""){
-            if (data.error === "OAuthNotAuthenticated") {
+            if (data.need_to_authenticate && data.error === "OAuthNotAuthenticated") {
                 this.followOAuth(data.oauthUrl);
                 this.$status_message.text("Please follow the popup in order to authenticate EdX for your Onshape account then submit your answer again.");
 
@@ -231,6 +235,7 @@ export class OnshapeBlock {
         this.attempts_made = data.attempts_made;
         this.submitted = data.submitted;
         this.submitted_url = data.submitted_url;
+        this.need_to_authenticate = data.need_to_authenticate;
     }
 
     followOAuth(url: string){
