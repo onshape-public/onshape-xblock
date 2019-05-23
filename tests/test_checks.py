@@ -9,7 +9,7 @@ def test_check_creation(configured_cube_version):
 
 
 def test_check_volume(configured_cube_version, checker_function):
-    check_init_args_fail = {"check_type": "check_volume", "min_volume": "1 meter**3", "max_volume": "3 meter**3", "part_number": 0}
+    check_init_args_fail = {"check_type": "check_volume", "check_parameters": { "min_volume": "1 meter**3", "max_volume": "3 meter**3", "part_number": 0}}
     feedback = checker_function(configured_cube_version, check_init_args_fail)
     assert not feedback["passed"]
     assert feedback["message"]

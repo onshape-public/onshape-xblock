@@ -46,6 +46,7 @@ export class OnshapeBlock {
     protected $total_points_counter: JQuery<HTMLElement>;
     protected $onshape_url: any;
     protected $spinner: JQuery<HTMLElement>;
+    protected $help_button: JQuery<HTMLElement>;
 
     constructor(runtime: any, element: any, init_args: any) {
 
@@ -77,11 +78,15 @@ export class OnshapeBlock {
         this.$total_points_counter = $('#total_points_counter', element);
         this.$onshape_url = $('#onshape_url', element);
         this.$spinner = $('#spinner', element);
+        this.$help_button = $('#activetable-help-button', element);
 
         //First check if this is an OAuth response.
         this.checkIfOauth();
 
         //HANDLERS - below are the handler calls for various actions.
+
+        // HELP TOGGLE
+        this.$help_button.on("click", this.toggleHelp);
 
         // CHECK THE ONSHAPE ELEMENT
         this.$check_button.click(() => this.checkAnswer());
@@ -113,9 +118,9 @@ export class OnshapeBlock {
     }
 
     continueCallAfterOAuth() {
-        const url = new URLParse(window.location.href);
+        this.need_to_authenticate = false;
         this.submitted_url= new URLParse(window.location.href, '', true).query.state;
-        log.info("Finish call after OAUth (in continueCallAfterOAuth)")
+        log.info("Finish call after OAUth (in continueCallAfterOAuth)");
         this.checkAnswer();
     }
 

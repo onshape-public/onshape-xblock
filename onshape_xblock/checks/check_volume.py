@@ -11,7 +11,7 @@ class CheckVolume(CheckBase):
     additional_form_properties = {
                 "part_number": {
                     "default": 0,
-                    "description": "a longer description, perhaps with some html?",
+                    "description": "The index of the part that this is. For instance, 0 is the first one that appears on the left under 'parts'",
                     "type": "number",
                     "title": "The index of the part in the parts list"
                 },

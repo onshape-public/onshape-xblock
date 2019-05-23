@@ -44,7 +44,7 @@ class Serialize(jsonpickle.handlers.BaseHandler):
         return final_list
 
     @staticmethod
-    def init_class_based_on_type(package_name=None, check_type=None, init_class=True, **class_init_args):
+    def init_class_based_on_type(package_name=None, check_type=None, init_class=True, check_parameters={}, **kwargs):
         if not check_type:
             raise AttributeError("Must define a checker type.")
         module_name = package_name + "." + check_type
@@ -55,7 +55,8 @@ class Serialize(jsonpickle.handlers.BaseHandler):
         except AttributeError as e:
             raise AttributeError("The class name in module {} needs to match {}".format(module_name, class_name))
         if init_class:
-            return class_(**class_init_args)
+            check_parameters.update(**kwargs)
+            return class_(**check_parameters)
         else:
             return class_
 

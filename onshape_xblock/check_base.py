@@ -99,13 +99,13 @@ class CheckBase(object):
         form_definition_copy.update(properties)
         return form_definition_copy
 
-    def __init__(self, name="The checker name", max_points=1,
+    def __init__(self, name=None, max_points=1,
                  onshape_element=None):
         """Initialize the definition of the check"""
         self.max_points = max_points
         # The points scored for this check
         self.points = 0
-        self.name = name
+        self.name = name if name else self.__name__
         # Start client on the fly if need be.
         self.client = Client.get_client()
 

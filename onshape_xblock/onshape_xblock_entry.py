@@ -24,8 +24,6 @@ import traceback
 from onshape_client.client import Client, OAuthAuthorizationMethods, OAuthNotAuthorizedException
 from onshape_client.onshape_url import OnshapeElement
 from onshape_client.rest import ApiException
-import importlib
-from serialize import Serialize
 import os
 
 loader = ResourceLoader(__name__)  # pylint: disable=invalid-name
@@ -57,7 +55,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         default="An Onshape Problem",
     )
     check_list = List(
-        display_name='The definition of the question. Please see the documentation for some examples',
+        display_name='The list of checks that will be performed.',
         help='Please visit the documentation here to see the default definition of possible question types.',
         scope=Scope.content,
         multiline_editor=True,
@@ -139,39 +137,6 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         data = pkg_resources.resource_string(__name__, path)
         return data.decode("utf8")
 
-    def get_client(self):
-        """Start the client if the client isn't already started."""
-        try:
-            client = Client.get_client(create_if_needed=False)
-        except Exception as e:
-
-            if self.stack == "STAGE":
-                base_url = "https://staging.dev.onshape.com"
-                token_uri = "https://staging-oauth.dev.onshape.com/oauth/token"
-                authorization_uri = "https://staging-oauth.dev.onshape.com/oauth/authorize"
-            elif self.stack == "DEMOC":
-                base_url = "https://demo-c.dev.onshape.com"
-                token_uri = "https://demo-c-oauth.dev.onshape.com/oauth/token"
-                authorization_uri = "https://demo-c-oauth.dev.onshape.com/oauth/authorize"
-            # PROD stack is default.
-            else:
-                base_url = "https://cad.onshape.com"
-                token_uri = "https://oauth.onshape.com/oauth/token"
-                authorization_uri = "https://oauth.onshape.com/oauth/authorize"
-
-            client = Client(configuration={"client_id": self.client_id,
-                                  "client_secret": self.client_secret,
-                                  "base_url": base_url,
-                                  "token_uri": token_uri,
-                                  "authorization_uri": authorization_uri,
-                                  "oauth_authorization_method": OAuthAuthorizationMethods.MANUAL_FLOW,
-                                  "scope": ["OAuth2Read"],
-                                  "redirect_uri": self.redirect_uri,
-                                  "access_token": self.access_token,
-                                  "refresh_token": self.refresh_token
-            })
-        return client
-
     def oauth_login_view(self, context):
         html = loader.render_django_template('templates/html/oauth_login_view.html', {})
         css = loader.render_template('templates/css/onshape_xblock.css', {})
@@ -189,6 +154,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         """
         frag = super(OnshapeXBlock, self).studio_view(context)
 
+        # For now adding the form to the actual studio view is a nightmare.
         # js_context = dict(
         #     check_list_form=self.resource_string('public/json/check_list_form.json')
         # )
@@ -276,8 +242,9 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                 body = json.loads(e.body)
                 self.error = body["message"]
 
-    # The callback for the OAuth client
-    def set_need_to_authorize(self, url_state_tuple):
+    def start_oauth_flow(self):
+        client= self.get_client()
+        url_state_tuple = client.oauth.authorization_url(client.authorization_uri, state=self.submitted_url)
         self.need_to_authenticate = True
         self.oauth_authorization_url, state = url_state_tuple
         logging.debug("Authorization url set: {}".format(url_state_tuple[0]))
@@ -334,8 +301,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
                 self.perform_checks()
                 # Need to authenticate with OAuth
         except OAuthNotAuthorizedException as e:
-            # Client id/ Client secret aren't specified
-            self.set_need_to_authorize(client.oauth.authorization_url(client.authorization_uri, state=self.submitted_url))
+            self.start_oauth_flow()
             self.set_errors(e)
         except ApiException as e:
             self.set_errors(e)
@@ -359,7 +325,45 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         self.lock_submitted_url_with_microversion()
 
     def lock_submitted_url_with_microversion(self):
-        self.submitted_url = OnshapeElement(self.submitted_url).get_microversion_url()
+        try:
+            self.submitted_url = OnshapeElement(self.submitted_url).get_microversion_url()
+        except Exception as e:
+            self.set_errors(e)
+            self.start_oauth_flow()
+
+
+    def get_client(self):
+        """Start the client if the client isn't already started."""
+        try:
+            client = Client.get_client(create_if_needed=False)
+        except Exception as e:
+
+            if self.stack == "STAGE":
+                base_url = "https://staging.dev.onshape.com"
+                token_uri = "https://staging-oauth.dev.onshape.com/oauth/token"
+                authorization_uri = "https://staging-oauth.dev.onshape.com/oauth/authorize"
+            elif self.stack == "DEMOC":
+                base_url = "https://demo-c.dev.onshape.com"
+                token_uri = "https://demo-c-oauth.dev.onshape.com/oauth/token"
+                authorization_uri = "https://demo-c-oauth.dev.onshape.com/oauth/authorize"
+            # PROD stack is default.
+            else:
+                base_url = "https://cad.onshape.com"
+                token_uri = "https://oauth.onshape.com/oauth/token"
+                authorization_uri = "https://oauth.onshape.com/oauth/authorize"
+
+            client = Client(configuration={"client_id": self.client_id,
+                                           "client_secret": self.client_secret,
+                                           "base_url": base_url,
+                                           "token_uri": token_uri,
+                                           "authorization_uri": authorization_uri,
+                                           "oauth_authorization_method": OAuthAuthorizationMethods.MANUAL_FLOW,
+                                           "scope": ["OAuth2Read"],
+                                           "redirect_uri": self.redirect_uri,
+                                           "access_token": self.access_token,
+                                           "refresh_token": self.refresh_token
+                                           })
+        return client
 
     @staticmethod
     def workbench_scenarios():
@@ -372,7 +376,7 @@ class OnshapeXBlock(StudioEditableXBlockMixin, XBlock):
         scenario_default = ("Default Onshape XBlock",
                        """\
                             <onshape_xblock 
-                                max_attempts="3" 
+                                max_attempts="1" 
                                 client_id="{client_id}"
                                 client_secret="{client_secret}" 
                                 redirect_uri="{redirect_uri}"

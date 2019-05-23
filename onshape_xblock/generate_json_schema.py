@@ -28,7 +28,7 @@ class GenerateCheckListForm():
         self.static_check_classes = {class_type["check_type"]: class_stuff for class_type, class_stuff in zip(check_name_list, check_class_list)}
 
     def generate_json_schema(self):
-        for check_type, check in self.static_check_classes.items():
+        for check_type, check in sorted(self.static_check_classes.items()):
             self.insert_check_dependencies(check_type)
             self.insert_check_definitions(check_type, check)
             self.insert_check_options(check_type)
@@ -66,7 +66,7 @@ class GenerateCheckListForm():
 
         with path(json_dir, self.form_output_filename) as p:
             with open(str(p), 'w') as f:
-                f.write(json.dumps(self.form_template, ensure_ascii=False))
+                f.write(json.dumps(self.form_template, ensure_ascii=False, sort_keys=True))
 
 
 

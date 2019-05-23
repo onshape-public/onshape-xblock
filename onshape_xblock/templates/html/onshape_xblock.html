@@ -34,7 +34,13 @@
         <div id="attempt_counter" class="submission-feedback"></div>
         <div id="status_message"></div>
         <ul id="response_list" class="check-list"></ul>
-        <button type="submit" id="final_submit_button" class="btn btn-primary">Submit Current Answer</button>
+        <button type="submit" id="final_submit_button" class="btn btn-primary">
+            {% if max_attempts > 1 %}
+                Submit Final Answer
+            {% else %}
+                Submit
+            {% endif %}
+        </button>
     </form>
 
 </div>

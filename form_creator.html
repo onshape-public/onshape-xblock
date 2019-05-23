@@ -36,7 +36,6 @@
     ), document.getElementById("my_body"));
         //Hide the submit button as it doesn't make sense in this context and add the text area field
         $('<div class="form-group"><textarea class="form-control" id="resultOutput" rows="3"></textarea></div>').insertBefore($(":submit"));
-        $('<div class="form-group"><textarea class="form-control" id="resultOutput" rows="3"></textarea></div>').insertBefore($(":submit"));
         $(":submit").hide();
         $("#resultOutput").attr("readonly");
     };
