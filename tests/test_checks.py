@@ -86,3 +86,11 @@ def test_check_part_count(configured_cube_version, checker_function):
     feedback = checker_function(configured_cube_version, check_init_args_fail)
     assert not feedback["passed"]
 
+def test_check_element_type(configured_cube_version, checker_function):
+    check_init_args_pass = {"check_type": "check_element_type", "expected_element_type": "Partstudio"}
+    feedback = checker_function(configured_cube_version, check_init_args_pass)
+    assert feedback["passed"]
+    check_init_args_pass = {"check_type": "check_element_type", "expected_element_type": "Assembly"}
+    feedback = checker_function(configured_cube_version, check_init_args_pass)
+    assert not feedback["passed"]
+

@@ -10,6 +10,7 @@ onshape-xblock = {path = ".",editable = true}
 
 [packages]
 ruamel-yaml = "*"
+onshape-xblock = {path = "."}
 
 [requires]
 python_version = "2.7"

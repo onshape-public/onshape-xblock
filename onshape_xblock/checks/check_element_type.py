@@ -14,7 +14,7 @@ class CheckElementType(CheckBase):
                         "type": "string",
                         "default": "List",
                         "enum": [
-                            "PartStudio",
+                            "Partstudio",
                             "Assembly",
                             "Drawing",
                             "Blob"
@@ -28,11 +28,11 @@ class CheckElementType(CheckBase):
                  **kwargs):
         super(CheckElementType, self).__init__(name="Check Element Type",
                                           **kwargs)
+        self.expected_element_type = expected_element_type
 
 
 
     def execute_check(self):
-        part_id = self.get_part_id(self.part_number)
-        mass_properties = self.get_mass_properties(part_id)
-        self.volume = quantify(mass_properties.bodies["-all-"].volume[0], default_units=u.m ** 3)
-        self.passed = (self.min_volume < self.volume < self.max_volume)
+        response = self.client.elements_api.get_element_metadata(self.onshape_element.did, self.onshape_element.wvm, self.onshape_element.wvmid, self.onshape_element.eid, _preload_content=False)
+        self.actual_element_type = res_to_dict(response)["type"].lower().capitalize()
+        self.passed = (self.actual_element_type == self.expected_element_type)
