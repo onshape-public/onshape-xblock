@@ -35,9 +35,9 @@ In short (you may need to change some of the defined vars):
 ```bash
 SOURCE_PORT=1234
 DESTINATION_PORT=80
-KEYFILE=~/.bash/bitnami-google-bitnami-onshape-edx.pem
-SERVER_IP=35.188.211.229
-sudo ssh -N -L $SOURCE_PORT:127.0.0.1:$DESTINATION_PORT -i $KEYFILE bitnami@$SERVER_IP
+KEYFILE=~/.bash/edx-keypair.pem
+SERVER_IP=12.345.678.90
+sudo ssh -N -L $SOURCE_PORT:127.0.0.1:$DESTINATION_PORT -i $KEYFILE ubuntu@$SERVER_IP
 ```
 
 Then go to: http://localhost:1234/admin/
