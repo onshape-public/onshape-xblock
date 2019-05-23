@@ -46,6 +46,13 @@ def merge_d(filler, template):
     else:
         return template
 
+def dig_into_dict(d, list_of_keys):
+    result = d
+    if list_of_keys:
+        for k in list_of_keys:
+            result = result[k]
+    return result
+
 
 
 

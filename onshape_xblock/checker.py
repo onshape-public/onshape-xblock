@@ -235,8 +235,8 @@ class Checker:
         return res.json()
 
     def get_features(self):
-        res = self.client.part_studios.get_features(self.guess['did'], self.guess['wvm_pair'],
-                                                    self.guess['eid'])
+        res = self.client.part_studios.get_ps_features(self.guess['did'], self.guess['wvm_pair'],
+                                                       self.guess['eid'])
         res.raise_for_status()
         return res.json()
 

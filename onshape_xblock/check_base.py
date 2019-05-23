@@ -115,6 +115,11 @@ class CheckBase(object):
         self.onshape_element = onshape_element if isinstance(onshape_element, OnshapeElement) or not onshape_element \
             else OnshapeElement(onshape_element)
 
+        self.did = self.onshape_element.did
+        self.wvm = self.onshape_element.wvm
+        self.wvmid = self.onshape_element.wvmid
+        self.eid = self.onshape_element.eid
+
         # Whether or not the check passed
         self.passed = False
 
@@ -147,35 +152,65 @@ class CheckBase(object):
         return self.get_parts()[part_number].part_id
 
     def get_parts(self):
-        parts = self.client.parts_api.get_parts_wmve(self.onshape_element.did, self.onshape_element.wvm,
-                                                     self.onshape_element.wvmid, self.onshape_element.eid)
+        parts = self.client.parts_api.get_parts_wmve(self.did, self.wvm, self.wvmid, self.eid)
         return parts
 
     def get_mass_properties(self, part_id):
-        mass_props = self.client.part_studios_api.get_mass_properties(self.onshape_element.did,
-                                                                      self.onshape_element.wvm,
-                                                                      self.onshape_element.wvmid,
-                                                                      self.onshape_element.eid,
+        mass_props = self.client.part_studios_api.get_mass_properties(self.did, self.wvm, self.wvmid, self.eid,
                                                                       part_id=[part_id])
         return mass_props
 
+    def get_element_type(self):
+        response = self.client.elements_api.get_element_metadata(self.did, self.wvm, self.wvmid, self.eid,
+                                                                 _preload_content=False)
+        return res_to_dict(response)["type"].lower().capitalize()
+
     def get_features(self):
         """get the feature list even if this is an assembly."""
-        res = self.client.part_studios_api.get_features(self.onshape_element.did, self.onshape_element.wvm,
-                                                        self.onshape_element.wvmid,
-                                                        self.onshape_element.eid, _preload_content=False)
-        res = res_to_dict(res)
-        return res["features"]
+        element_type = self.get_element_type()
+        if element_type == "Partstudio":
+            res = self.client.part_studios_api.get_features(self.did, self.wvm, self.wvmid, self.eid, _preload_content=False)
+        elif element_type == "Assembly":
+            res = self.client.assemblies_api.get_features2(self.did, self.wvm, self.wvmid, self.eid, _preload_content=False)
+        else:
+            raise TypeError("Your element needs to be either a Partstudio or an Assembly to get a feature check! Instead, it is a {}".format(element_type))
+        return res_to_dict(res)["features"]
 
     def get_configuration(self):
-        res = self.client.part_studios_api.get_configuration4(self.onshape_element.did, self.onshape_element.wvm,
-                                                              self.onshape_element.wvmid, self.onshape_element.eid,
+        res = self.client.part_studios_api.get_configuration4(self.did, self.wvm, self.wvmid, self.eid,
                                                               _preload_content=False)
 
         return res_to_dict(res)
 
+    def get_assembly_definition(self):
+        res = self.client.assemblies_api.get_assembly_definition1(self.did, self.wvm, self.wvmid, self.eid, _preload_content=False)
+        return res_to_dict(res)
+
+    def get_instances(self):
+        return self.get_assembly_definition()["rootAssembly"]["instances"]
+
+    @staticmethod
+    def check_lists(expected_list, actual_list,comparison_function):
+        """Check the first list against the second list. Comparison function should return True if the test passed, and
+        should otherwise return an object representing the error. Similarly, this function returns True if passed, and
+        an object if it doesn't."""
+        actual_count = len(actual_list)
+        expected_count = len(expected_list)
+        if actual_count != expected_count:
+            raise AssertionError("Incorrect count")
+
+        check_evaluation_list = []
+        for expected, actual in zip(expected_list, actual_list):
+            check_evaluation_list.append(comparison_function(expected, actual))
+        if all([r == {} for r in check_evaluation_list]):
+            return True
+        else:
+            return check_evaluation_list
+
     def format_feedback_messages(self):
         self.failure_message = Template(self.failure_message_template).render(self.__dict__)
         self.success_message = Template(self.success_message_template).render(self.__dict__)
+
+
 
 #   ----------------------------PRIVATE FUNCTIONS -------------------------------------

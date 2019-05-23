@@ -6,22 +6,26 @@ class CheckElementType(CheckBase):
 
     This element type check checks whether or not the specified Onshape element is the correct element type. """
 
-    failure_message_template = "The element you passed in is a {{ actual_element_type }} rather than the expected {{ expected_element_type }}."
-    success_message_template = "Element type check passed!"
+    instance_type_key = "feature_type"
+    feature_list_target_default = [{instance_type_key: "newSketch"}, {instance_type_key: "extrude"}]
     additional_form_properties = {
-                "expected_element_type": {
-                        "title": "The expected element type.",
+        "instance_list_type_target": {
+            "type": "array",
+            "title": "Target instance list definition",
+            "items": {
+                "type": "object",
+                "title": "Instance",
+                "properties": {
+                    instance_type_key: {
+                        "title": "The feature type (ex. boolean, extrude, etc...)",
+                        "description": "note that a sketch has a feature type of 'newSketch'",
                         "type": "string",
-                        "default": "List",
-                        "enum": [
-                            "Partstudio",
-                            "Assembly",
-                            "Drawing",
-                            "Blob"
-                        ],
-                        "uniqueItems": True
+                        "default": "extrude"
                     }
+                }
             }
+        }
+    }
 
     def __init__(self,
                  expected_element_type=None,
@@ -33,6 +37,5 @@ class CheckElementType(CheckBase):
 
 
     def execute_check(self):
-        response = self.client.elements_api.get_element_metadata(self.onshape_element.did, self.onshape_element.wvm, self.onshape_element.wvmid, self.onshape_element.eid, _preload_content=False)
-        self.actual_element_type = res_to_dict(response)["type"].lower().capitalize()
+        self.actual_element_type = self.get_element_type()
         self.passed = (self.actual_element_type == self.expected_element_type)

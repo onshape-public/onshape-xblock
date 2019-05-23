@@ -57,15 +57,15 @@ def test_check_feature_list(configured_cube_version, checker_function):
     feedback = checker_function(configured_cube_version, check_init_args_fail_length)
     assert not feedback["passed"]
 
-def test_check_feature_list_assembly(configured_cube_version, checker_function):
-    check_init_args_pass = {"check_type": "check_feature_list", "feature_list_target": [{"feature_type": "newSketch"}, {"feature_type": "extrude"}, {"feature_type": "fillet"}, {"feature_type": "chamfer"}]}
-    feedback = checker_function(configured_cube_version, check_init_args_pass)
+def test_check_feature_list_assembly(configured_cube_version_9_assembly, checker_function):
+    check_init_args_pass = {"check_type": "check_feature_list", "feature_list_target": [{"feature_type": "mate", "secondary_type": "revolute"}, {"feature_type": "mateConnector"}, {"feature_type": "mateConnector"}, {"feature_type": "mate", "secondary_type": "revolute"}]}
+    feedback = checker_function(configured_cube_version_9_assembly, check_init_args_pass)
     assert feedback["passed"]
     check_init_args_fail_type = {"check_type": "check_feature_list", "feature_list_target": [{"feature_type": "extrude"}, {"feature_type": "extrude"}, {"feature_type": "fillet"}, {"feature_type": "chamfer"}]}
-    feedback = checker_function(configured_cube_version, check_init_args_fail_type)
+    feedback = checker_function(configured_cube_version_9_assembly, check_init_args_fail_type)
     assert not feedback["passed"]
     check_init_args_fail_length = {"check_type": "check_feature_list", "feature_list_target": [{"feature_type": "extrude"}, {"feature_type": "fillet"}, {"feature_type": "chamfer"}]}
-    feedback = checker_function(configured_cube_version, check_init_args_fail_length)
+    feedback = checker_function(configured_cube_version_9_assembly, check_init_args_fail_length)
     assert not feedback["passed"]
 
 def test_check_mass(configured_cube_version, checker_function):
@@ -92,5 +92,16 @@ def test_check_element_type(configured_cube_version, checker_function):
     assert feedback["passed"]
     check_init_args_pass = {"check_type": "check_element_type", "expected_element_type": "Assembly"}
     feedback = checker_function(configured_cube_version, check_init_args_pass)
+    assert not feedback["passed"]
+
+def test_check_instance_list(configured_cube_version_9_assembly, checker_function):
+    check_init_args_pass = {"check_type": "check_instances", "instance_list_target": [{"instance_type": "Part"}, {"instance_type": "Part"}, {"instance_type": "Part"}]}
+    feedback = checker_function(configured_cube_version_9_assembly, check_init_args_pass)
+    assert feedback["passed"]
+    check_init_args_pass = {"check_type": "check_instances", "instance_list_target": [{"instance_type": "Part"}, {"instance_type": "Part"}]}
+    feedback = checker_function(configured_cube_version_9_assembly, check_init_args_pass)
+    assert not feedback["passed"]
+    check_init_args_pass = {"check_type": "check_instances", "instance_list_target": [{"instance_type": "Part"}, {"instance_type": "Part"}, {"instance_type": "Assembly"}]}
+    feedback = checker_function(configured_cube_version_9_assembly, check_init_args_pass)
     assert not feedback["passed"]
 
