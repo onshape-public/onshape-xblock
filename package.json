@@ -11,7 +11,7 @@
     "@types/react-dom": "^16.8.4",
     "@types/url-parse": "^1.4.3",
     "abbrev": "^1.1.1",
-    "acorn": "^6.1.1",
+    "acorn": "^6.4.1",
     "acorn-dynamic-import": "^4.0.0",
     "ajv": "^6.10.0",
     "ajv-errors": "^1.0.1",
